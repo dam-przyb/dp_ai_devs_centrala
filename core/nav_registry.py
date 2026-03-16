@@ -27,6 +27,11 @@ NAV = [
                 "label": "Grounding (RAG)",
                 "url_name": "l01_grounding",
             },
+            {
+                "slug": "quest",
+                "label": "Quest",
+                "url_name": "l01_quest",
+            },
         ],
     },
     {

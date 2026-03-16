@@ -1,0 +1,64 @@
+{% load static %}
+
+<div class="p-8 max-w-5xl mx-auto">
+  <!-- Header -->
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">Quest - People Finder</h1>
+    <p class="text-gray-600">
+      Identify transport workers from the Great Correction survivor database.
+      This workflow will download data, filter by demographics, tag jobs using LLM,
+      and submit results to the verification hub.
+    </p>
+  </header>
+
+  <!-- Action Section -->
+  <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 mb-1">Execute Quest</h2>
+        <p class="text-sm text-gray-600">
+          This process may take 30-60 seconds to complete due to LLM processing.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+        hx-post="{% url 'l01_quest_api' %}"
+        hx-target="#quest-result"
+        hx-swap="innerHTML"
+        hx-indicator="#loading-spinner"
+      >
+        Execute Quest
+      </button>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="htmx-indicator mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <div class="flex items-center gap-3">
+        <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-blue-700 font-medium">Processing quest... Please wait.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Container -->
+  <div id="quest-result" class="mt-8">
+    <!-- Results will be loaded here via HTMX -->
+  </div>
+
+  <!-- Workflow Steps Info -->
+  <div class="mt-12 p-6 bg-gray-50 rounded-lg border border-gray-200">
+    <h3 class="text-lg font-semibold text-gray-800 mb-3">Quest Workflow Steps:</h3>
+    <ol class="list-decimal list-inside space-y-2 text-gray-700">
+      <li><strong>Download</strong> - Fetch people.csv from AG3NTS Hub</li>
+      <li><strong>Filter</strong> - Select males, age 20-40 in 2026, born in Grudziądz</li>
+      <li><strong>Tag Jobs</strong> - Use LLM to classify job descriptions with structured output</li>
+      <li><strong>Select Transport</strong> - Filter people with "transport" tag</li>
+      <li><strong>Submit</strong> - Send results to verification endpoint</li>
+      <li><strong>Display Flag</strong> - Show completion flag from hub</li>
+    </ol>
+  </div>
+</div>

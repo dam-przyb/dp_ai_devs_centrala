@@ -1,0 +1,22 @@
+{
+       "apikey": "tutaj-twój-klucz-api",
+       "task": "people",
+       "answer": [
+         {
+           "name": "Jan",
+           "surname": "Kowalski",
+           "gender": "M",
+           "born": 1987,
+           "city": "Warszawa",
+           "tags": ["tag1", "tag2"]
+         },
+         {
+           "name": "Anna",
+           "surname": "Nowak",
+           "gender": "F",
+           "born": 1993,
+           "city": "Grudziądz",
+           "tags": ["tagA", "tagB", "tagC"]
+         }
+       ]
+}

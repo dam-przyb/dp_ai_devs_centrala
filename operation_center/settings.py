@@ -81,6 +81,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 
@@ -108,3 +109,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 # MCP server command (lesson 03 — optional)
 MCP_SERVER_SCRIPT = os.getenv("MCP_SERVER_SCRIPT", "")
+
+# AI Devs API Key (Quest task)
+AIDEVS_API_KEY = os.getenv("AIDEVSKEY", "")

@@ -1,5 +1,5 @@
 from django.urls import path
-from lesson_01.views import interaction, structured, grounding
+from lesson_01.views import interaction, structured, grounding, quest
 
 urlpatterns = [
     # Interaction (multi-turn chat)
@@ -13,4 +13,8 @@ urlpatterns = [
     # Grounding (RAG)
     path("grounding/",       grounding.grounding_view,     name="l01_grounding"),
     path("grounding/api/",   grounding.grounding_api,      name="l01_grounding_api"),
+
+    # Quest (task completion)
+    path("quest/",           quest.quest_view,             name="l01_quest"),
+    path("quest/api/",       quest.quest_api,              name="l01_quest_api"),
 ]
