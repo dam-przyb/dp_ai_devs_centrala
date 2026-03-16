@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Damian's Operation Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <style>
+    /* Ensure HTMX indicator spins on in-flight requests */
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator { display: inline; }
+    .htmx-request.htmx-indicator { display: inline; }
+  </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden bg-gray-100 text-gray-900">
+
+  <!-- ── Title Bar ── -->
+  <header class="bg-gray-900 text-white px-6 py-3 flex-shrink-0 flex items-center gap-3">
+    <span class="text-lg font-bold tracking-wide">Damian's Operation Center</span>
+    <span class="text-gray-500 text-xs">| AI Devs Dashboard</span>
+    <!-- Global spinner shown during any HTMX request -->
+    <span class="htmx-indicator ml-auto text-yellow-400 text-xs animate-pulse">Loading…</span>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- ── Sidebar Nav ── -->
+    <nav class="w-60 bg-gray-800 text-gray-300 flex-shrink-0 overflow-y-auto">
+      {% include "core/partials/nav_menu.html" with nav=nav %}
+    </nav>
+
+    <!-- ── Workspace ── -->
+    <main id="workspace-container"
+          class="flex-grow overflow-y-auto bg-white"
+          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+      <div class="flex items-center justify-center h-full text-gray-400">
+        <div class="text-center space-y-2">
+          <p class="text-4xl">&#128072;</p>
+          <p class="text-sm">Select a module from the sidebar to begin.</p>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+{# Full workspace partial for grounding (RAG) demo #}
+<div class="p-6 max-w-2xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Grounding — RAG</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Ask a question answered from the local <code>knowledge_base/</code> directory.
+      The LLM will only use retrieved document chunks — no hallucinations.
+    </p>
+  </div>
+
+  <form hx-post="{% url 'l01_grounding_api' %}"
+        hx-target="#grounding-result"
+        hx-swap="innerHTML"
+        hx-indicator="#grounding-spinner"
+        class="flex gap-2">
+    {% csrf_token %}
+    <input type="text" name="question"
+           autocomplete="off"
+           placeholder="Ask something about the knowledge base…"
+           class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+    <button type="submit"
+            class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+      Ask
+    </button>
+    <span id="grounding-spinner"
+          class="htmx-indicator self-center text-xs text-gray-400 animate-pulse">Searching…</span>
+  </form>
+
+  <div id="grounding-result"></div>
+
+</div>

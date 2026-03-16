@@ -1,0 +1,33 @@
+{% for lesson in nav %}
+<div class="border-b border-gray-700">
+
+  <!-- Lesson header -->
+  <button
+    onclick="this.nextElementSibling.classList.toggle('hidden')"
+    class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-200 hover:bg-gray-700 transition-colors">
+    <span>{{ lesson.label }}</span>
+    <span class="text-gray-500 text-xs">&#9660;</span>
+  </button>
+
+  <!-- Module list -->
+  <div class="pb-1">
+    {% for module in lesson.modules %}
+      {% url module.url_name as module_url %}
+      {% if module_url %}
+        <a href="#"
+           hx-get="{{ module_url }}"
+           hx-target="#workspace-container"
+           hx-swap="innerHTML"
+           class="block pl-7 pr-4 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors cursor-pointer">
+          {{ module.label }}
+        </a>
+      {% else %}
+        <span class="block pl-7 pr-4 py-1.5 text-sm text-gray-600 italic">
+          {{ module.label }} <span class="text-xs">(soon)</span>
+        </span>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+</div>
+{% endfor %}

@@ -1,0 +1,34 @@
+{# Full workspace partial for sandboxed filesystem agent #}
+<div class="p-6 max-w-3xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">FS Agent — Sandboxed Filesystem</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      The agent has three tools: <code>list_directory</code>, <code>read_file</code>,
+      <code>write_file</code>. All paths are locked to the
+      <code>sandbox/</code> directory — path traversal is blocked at the service level.
+    </p>
+  </div>
+
+  <form hx-post="{% url 'l02_tool_use_api' %}"
+        hx-target="#agent-result"
+        hx-swap="innerHTML"
+        hx-indicator="#agent-spinner"
+        class="space-y-3">
+    {% csrf_token %}
+    <textarea name="objective" rows="3"
+              placeholder="e.g. List all files, then read notes.txt and write a summary to summary.txt"
+              class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"></textarea>
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+        Run Agent
+      </button>
+      <span id="agent-spinner"
+            class="htmx-indicator text-xs text-gray-400 animate-pulse">Agent running…</span>
+    </div>
+  </form>
+
+  <div id="agent-result"></div>
+
+</div>

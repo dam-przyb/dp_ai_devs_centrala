@@ -1,0 +1,12 @@
+{# Partial: one user + one AI message pair, appended to #chat-history #}
+<div class="flex justify-end">
+  <div class="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-lg text-sm">
+    {{ user_msg }}
+  </div>
+</div>
+
+<div class="flex justify-start">
+  <div class="bg-gray-100 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2 max-w-lg text-sm whitespace-pre-wrap">
+    {{ ai_msg }}
+  </div>
+</div>

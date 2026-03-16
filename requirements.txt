@@ -1,0 +1,9 @@
+django>=5.0
+python-dotenv
+langchain>=0.3
+langchain-openai>=0.2
+langchain-community>=0.3
+langchain-core>=0.3
+faiss-cpu
+httpx
+pydantic>=2.0

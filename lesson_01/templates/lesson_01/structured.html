@@ -1,0 +1,33 @@
+{# Full workspace partial for structured output demo #}
+<div class="p-6 max-w-2xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Structured Output</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Submit any text and the LLM will return a <strong>typed</strong> evaluation
+      (score, strengths, weaknesses, summary) via <code>with_structured_output()</code>.
+    </p>
+  </div>
+
+  <form hx-post="{% url 'l01_structured_api' %}"
+        hx-target="#structured-result"
+        hx-swap="innerHTML"
+        hx-indicator="#structured-spinner"
+        class="space-y-3">
+    {% csrf_token %}
+    <textarea name="text" rows="6"
+              placeholder="Paste any paragraph, essay, or code snippet to evaluate…"
+              class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-vertical"></textarea>
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+        Evaluate
+      </button>
+      <span id="structured-spinner"
+            class="htmx-indicator text-xs text-gray-400 animate-pulse">Analysing…</span>
+    </div>
+  </form>
+
+  <div id="structured-result"></div>
+
+</div>

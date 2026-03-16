@@ -1,0 +1,37 @@
+{# Full workspace partial for minimal tool demo #}
+<div class="p-6 max-w-2xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Minimal Tool — Weather</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Ask about the weather in any city. The LLM decides when to call
+      <code>get_weather(location)</code> and weaves the result into its answer.
+      Tool call is handled with a <strong>manual loop</strong> (no agent executor).
+    </p>
+    <p class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-1.5 mt-2">
+      Demo note: weather data is mocked. Try London, Paris, New York, Tokyo, or Warsaw.
+    </p>
+  </div>
+
+  <form hx-post="{% url 'l02_tools_api' %}"
+        hx-target="#weather-result"
+        hx-swap="innerHTML"
+        hx-indicator="#weather-spinner"
+        hx-on::after-request="this.reset()"
+        class="flex gap-2">
+    {% csrf_token %}
+    <input type="text" name="prompt"
+           autocomplete="off"
+           placeholder="e.g. What is the weather like in London?"
+           class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+    <button type="submit"
+            class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+      Ask
+    </button>
+    <span id="weather-spinner"
+          class="htmx-indicator self-center text-xs text-gray-400 animate-pulse">Calling LLM…</span>
+  </form>
+
+  <div id="weather-result"></div>
+
+</div>

@@ -1,0 +1,7 @@
+This is the first sample file in the sandbox.
+It contains some notes about the AI Devs course.
+
+Topic: Basics of LLM interaction
+- Always use system prompts to set context
+- Temperature 0 for deterministic outputs
+- Use structured output (JSON mode) for predictable results
