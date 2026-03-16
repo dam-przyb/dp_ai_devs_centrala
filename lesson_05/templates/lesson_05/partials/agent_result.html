@@ -1,0 +1,26 @@
+{# lesson_05/partials/agent_result.html — one orchestrator exchange #}
+<div class="space-y-2">
+
+  {# User bubble #}
+  <div class="flex justify-end">
+    <div class="bg-emerald-600 text-white text-sm rounded-2xl rounded-br-sm px-4 py-2 max-w-lg shadow-sm">
+      {{ message }}
+    </div>
+  </div>
+
+  {# Routing badge #}
+  <div class="flex justify-start">
+    <span class="text-xs text-gray-400 px-2">
+      Routed to <strong class="text-gray-600">{{ agent_label }}</strong>
+      {% if reasoning %}— <em>{{ reasoning }}</em>{% endif %}
+    </span>
+  </div>
+
+  {# Agent response bubble #}
+  <div class="flex justify-start">
+    <div class="bg-white border border-gray-200 text-gray-800 text-sm rounded-2xl rounded-bl-sm px-4 py-3 max-w-lg shadow-sm whitespace-pre-wrap leading-relaxed">
+      {{ response }}
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,41 @@
+{# lesson_05/agent.html — Master Orchestrator workspace partial #}
+<div class="flex flex-col h-full p-6 max-w-3xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Master Orchestrator</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Type any message. The orchestrator classifies your intent and routes it
+      to the best sub-agent: Chat, Filesystem, Media, or MCP.
+    </p>
+    <p class="text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-3 py-1.5 mt-2">
+      Routing powered by <strong>OpenRouter LLM</strong> — intent classification
+      then delegation to Lesson 01–04 services.
+    </p>
+  </div>
+
+  {# ── Results area ── #}
+  <div id="agent-history" class="flex-1 overflow-y-auto space-y-3 min-h-0"></div>
+
+  {# ── Input form ── #}
+  <form hx-post="{% url 'l05_agent_api' %}"
+        hx-target="#agent-history"
+        hx-swap="beforeend"
+        hx-indicator="#agent-spinner"
+        hx-on::after-request="this.reset()"
+        class="flex gap-2 border-t pt-4">
+    {% csrf_token %}
+    <input name="message"
+           autocomplete="off"
+           placeholder="Ask anything — the orchestrator will route it…"
+           class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300">
+    <button type="submit"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+      Send
+    </button>
+    <span id="agent-spinner"
+          class="htmx-indicator self-center text-xs text-gray-400 animate-pulse">
+      Routing…
+    </span>
+  </form>
+
+</div>

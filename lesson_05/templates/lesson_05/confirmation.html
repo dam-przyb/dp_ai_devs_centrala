@@ -1,0 +1,55 @@
+{# lesson_05/confirmation.html — Human-in-the-Loop workspace partial #}
+<div class="p-6 max-w-3xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Human-in-the-Loop Confirmation</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Enter a task. An LLM will draft an action (e.g. an email), then pause and
+      ask you to <strong>approve</strong> before executing it.
+    </p>
+    <p class="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-3 py-1.5 mt-2">
+      Powered by <strong>LangGraph</strong> with <code>interrupt_before</code> and
+      SQLite checkpointing — the graph state survives across HTTP requests.
+    </p>
+  </div>
+
+  {# ── Task input form ── #}
+  <form hx-post="{% url 'l05_confirmation_start' %}"
+        hx-target="#confirmation-result"
+        hx-swap="innerHTML"
+        hx-indicator="#conf-spinner"
+        class="border border-gray-200 rounded-xl overflow-hidden">
+    {% csrf_token %}
+
+    <div class="bg-gray-50 px-5 py-3 border-b">
+      <h3 class="font-medium text-gray-700 text-sm">Step 1 — Describe the action</h3>
+    </div>
+
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-2">
+          Task description
+        </label>
+        <textarea name="task"
+                  rows="3"
+                  placeholder="e.g. Email John Smith to reschedule our Friday meeting to next Monday at 10am"
+                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"></textarea>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+          Plan Action →
+        </button>
+        <span id="conf-spinner"
+              class="htmx-indicator text-xs text-gray-400 animate-pulse">
+          LLM drafting action…
+        </span>
+      </div>
+    </div>
+  </form>
+
+  {# ── Dynamic result area (approval prompt or final result) ── #}
+  <div id="confirmation-result"></div>
+
+</div>

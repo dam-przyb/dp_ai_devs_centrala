@@ -7,16 +7,17 @@
 
 ---
 
-## Current Status: Phases 0–4 Complete ✅
+## Current Status: Phases 0–6 Complete ✅
 
 | Phase | Description | Status |
 |---|---|---|
-| 0 | Project scaffold (settings, urls, dirs, .env) | ✅ Done (previous session) |
-| 1 | `core` app — base template, nav, dashboard view | ✅ Done (previous session) |
-| 2 | `lesson_01` — chat (interaction), structured output, RAG grounding | ✅ Done (previous session) |
-| 3 | `lesson_03` — MCP (core, native, translator, upload) | ✅ Done (this session) |
-| 4 | `lesson_04` — Media (audio, video-gen, image, PDF report) | ✅ Done (this session) |
-| **5** | **`lesson_05` — LangGraph confirmation + master orchestrator** | ❌ TODO NEXT |
+| 0 | Project scaffold (settings, urls, dirs, .env) | ✅ Done |
+| 1 | `core` app — base template, nav, dashboard view | ✅ Done |
+| 2 | `lesson_01` — chat (interaction), structured output, RAG grounding | ✅ Done |
+| 3 | `lesson_03` — MCP (core, native, translator, upload) | ✅ Done |
+| 4 | `lesson_04` — Media (audio, video-gen, image, PDF report) | ✅ Done |
+| **6** | **`lesson_05` — LangGraph confirmation + master orchestrator** | ✅ Done (this session) |
+| **Final** | **Wiring check — all URLs resolve, `manage.py check` = 0** | ✅ Done (this session) |
 
 > **Note**: The implementation plan calls lesson_02 "Phase 3" and lesson_03
 > "Phase 4", but the Django apps follow `lesson_0X` naming. The numbering
