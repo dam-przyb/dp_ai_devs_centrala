@@ -1,0 +1,112 @@
+{# PDF Report builder workspace partial #}
+<div class="p-6 max-w-4xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">PDF Report Builder</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Enter a title and up to three sections. Use <strong>Preview</strong> to see
+      the report in-page, or <strong>Download PDF</strong> to generate and save the file via WeasyPrint.
+    </p>
+  </div>
+
+  {# ── Report form ──────────────────────────────────────────────────────────── #}
+  <div class="border border-gray-200 rounded-xl overflow-hidden">
+    <div class="bg-gray-50 px-5 py-3 border-b">
+      <h3 class="font-medium text-gray-700 text-sm">Report Content</h3>
+    </div>
+    <div class="p-5 space-y-4">
+
+      {# Title #}
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Report Title</label>
+        <input type="text" id="report-title" name="report-title-display"
+               placeholder="e.g. Q3 Analysis Report"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+      </div>
+
+      {# Sections (static 3 for simplicity) #}
+      {% for i in "012" %}
+        <div class="border border-gray-100 rounded-lg p-4 space-y-2 bg-gray-50">
+          <p class="text-xs font-semibold text-gray-500">Section {{ forloop.counter }}</p>
+          <input type="text" id="section-heading-{{ forloop.counter0 }}"
+                 placeholder="Section heading"
+                 class="w-full border border-gray-200 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+          <textarea id="section-body-{{ forloop.counter0 }}" rows="3"
+                    placeholder="Section body text…"
+                    class="w-full border border-gray-200 rounded px-3 py-1.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
+        </div>
+      {% endfor %}
+
+      {# Action buttons — both use JS to build a form from the fields above #}
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="submitReport('preview')"
+                class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+          Preview
+        </button>
+        <button type="button" onclick="submitReport('download')"
+                class="bg-gray-800 hover:bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+          Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="report-preview"></div>
+
+</div>
+
+{# Hidden HTMX preview form — filled by JS and submitted programmatically #}
+<form id="report-preview-form"
+      hx-post="{% url 'l04_report_preview' %}"
+      hx-target="#report-preview"
+      hx-swap="innerHTML"
+      style="display:none">
+  {% csrf_token %}
+</form>
+
+{# Hidden download form — standard submit (not HTMX) for file download #}
+<form id="report-download-form"
+      method="post"
+      action="{% url 'l04_report_download' %}"
+      style="display:none">
+  {% csrf_token %}
+</form>
+
+<script>
+function collectReportData(form) {
+  form.querySelectorAll("input[name^='section_'], textarea[name^='section_']").forEach(el => el.remove());
+
+  const title = document.getElementById("report-title").value;
+  addHidden(form, "title", title);
+
+  for (let i = 0; i < 3; i++) {
+    const h = document.getElementById(`section-heading-${i}`).value;
+    const b = document.getElementById(`section-body-${i}`).value;
+    addHidden(form, `section_heading_${i}`, h);
+    addHidden(form, `section_body_${i}`, b);
+  }
+  // Sentinel so _parse_sections knows when to stop
+  addHidden(form, `section_heading_3`, "");
+  addHidden(form, `section_body_3`, "");
+}
+
+function addHidden(form, name, value) {
+  const el = document.createElement("input");
+  el.type  = "hidden";
+  el.name  = name;
+  el.value = value;
+  form.appendChild(el);
+}
+
+function submitReport(action) {
+  const form = document.getElementById(
+    action === "preview" ? "report-preview-form" : "report-download-form"
+  );
+  collectReportData(form);
+  if (action === "preview") {
+    htmx.trigger(form, "submit");  // HTMX handles preview
+  } else {
+    form.submit();                 // Regular submit triggers file download
+  }
+}
+</script>

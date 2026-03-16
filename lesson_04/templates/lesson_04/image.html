@@ -1,0 +1,49 @@
+{# Image generation workspace partial #}
+<div class="p-6 max-w-3xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Image Generation — DALL-E 3</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Generate an image from a text description using <strong>DALL-E 3</strong> via OpenRouter.
+      OpenRouter automatically forwards the request to the OpenAI images endpoint.
+    </p>
+  </div>
+
+  <form hx-post="{% url 'l04_image_api' %}"
+        hx-target="#image-result"
+        hx-swap="innerHTML"
+        hx-indicator="#image-spinner"
+        hx-on::after-request="this.reset()"
+        class="space-y-4">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1">Prompt</label>
+      <textarea name="prompt" rows="3"
+                placeholder="e.g. A cyberpunk city at night with neon reflections on wet pavement"
+                class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500 resize-none"></textarea>
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1">Size</label>
+      <select name="size"
+              class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500">
+        {% for s in sizes %}
+          <option value="{{ s }}" {% if s == "1024x1024" %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+        Generate Image
+      </button>
+      <span id="image-spinner"
+            class="htmx-indicator text-xs text-gray-400 animate-pulse">Generating with DALL-E 3…</span>
+    </div>
+  </form>
+
+  <div id="image-result"></div>
+
+</div>

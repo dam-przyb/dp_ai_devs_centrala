@@ -1,0 +1,78 @@
+{# MCP Native — direct MCP call workspace partial #}
+<div class="p-6 max-w-4xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">MCP Native — Direct Tool Calls</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Call MCP tools using only the <strong>MCP Python SDK</strong> — no LangChain, no LLM.
+      Select a tool from the list, fill in arguments, and see the raw output.
+    </p>
+  </div>
+
+  {% if error %}
+    <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+      <strong>MCP server error:</strong> {{ error }}
+    </div>
+  {% else %}
+
+    <form hx-post="{% url 'l03_mcp_native_api' %}"
+          hx-target="#native-result"
+          hx-swap="innerHTML"
+          hx-indicator="#native-spinner"
+          class="border border-gray-200 rounded-xl overflow-hidden">
+      {% csrf_token %}
+
+      <div class="bg-gray-50 px-5 py-3 border-b">
+        <h3 class="font-medium text-gray-700 text-sm">Select & Call</h3>
+      </div>
+
+      <div class="p-5 space-y-4">
+
+        {# Tool selector #}
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Tool</label>
+          <select name="tool_name"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">— select a tool —</option>
+            {% for tool in tools %}
+              <option value="{{ tool.name }}">{{ tool.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {# Available tools reference #}
+        {% if tools %}
+          <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-800 space-y-1">
+            <p class="font-semibold">Available tools:</p>
+            {% for tool in tools %}
+              <div>
+                <span class="font-mono font-semibold">{{ tool.name }}</span>
+                {% if tool.description %} — {{ tool.description }}{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {# Args input #}
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Arguments (JSON)</label>
+          <input type="text" name="tool_args"
+                 placeholder='e.g. {"path": "notes.txt"} or leave empty'
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button type="submit"
+                  class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+            Execute
+          </button>
+          <span id="native-spinner"
+                class="htmx-indicator text-xs text-gray-400 animate-pulse">Calling MCP server…</span>
+        </div>
+      </div>
+    </form>
+
+    <div id="native-result"></div>
+
+  {% endif %}
+</div>

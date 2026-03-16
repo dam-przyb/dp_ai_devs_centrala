@@ -1,0 +1,24 @@
+{# In-page HTML preview of the report — also used as the WeasyPrint source #}
+<div class="border border-amber-200 rounded-xl overflow-hidden">
+  <div class="bg-amber-50 px-5 py-3 border-b border-amber-200 flex items-center justify-between">
+    <span class="text-sm font-medium text-amber-800">Preview — {{ title }}</span>
+    <span class="text-xs text-gray-400">This is how the PDF will look</span>
+  </div>
+  <div class="p-6 prose prose-sm max-w-none">
+    <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ title }}</h1>
+    {% for section in sections %}
+      {% if section.heading or section.body %}
+        <section class="mb-5">
+          {% if section.heading %}
+            <h2 class="text-lg font-semibold text-gray-800 mb-1">{{ section.heading }}</h2>
+          {% endif %}
+          {% if section.body %}
+            <p class="text-gray-700 whitespace-pre-wrap">{{ section.body }}</p>
+          {% endif %}
+        </section>
+      {% endif %}
+    {% empty %}
+      <p class="text-gray-400 italic">No sections defined.</p>
+    {% endfor %}
+  </div>
+</div>

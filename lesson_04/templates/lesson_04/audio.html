@@ -1,0 +1,56 @@
+{# Audio transcription workspace partial #}
+<div class="p-6 max-w-3xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Audio Transcription + Summary</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Upload an audio file. <strong>Whisper</strong> transcribes it, then an
+      <strong>OpenRouter LLM</strong> produces a concise summary.
+    </p>
+    <p class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-1.5 mt-2">
+      Requires <code>OPENAI_API_KEY</code> in your <code>.env</code> — Whisper is not available via OpenRouter.
+    </p>
+  </div>
+
+  <form hx-post="{% url 'l04_audio_api' %}"
+        hx-target="#audio-result"
+        hx-swap="innerHTML"
+        hx-indicator="#audio-spinner"
+        hx-encoding="multipart/form-data"
+        class="border border-gray-200 rounded-xl overflow-hidden">
+    {% csrf_token %}
+
+    <div class="bg-gray-50 px-5 py-3 border-b">
+      <h3 class="font-medium text-gray-700 text-sm">Upload Audio</h3>
+    </div>
+
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-2">
+          Audio file (<code>.mp3</code>, <code>.wav</code>, <code>.m4a</code>, <code>.webm</code>, …)
+        </label>
+        <input type="file" name="audio_file"
+               accept="audio/*,.mp3,.wav,.m4a,.webm,.flac,.ogg"
+               class="block w-full text-sm text-gray-600
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-sm file:font-medium
+                      file:bg-rose-50 file:text-rose-700
+                      hover:file:bg-rose-100 cursor-pointer">
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="submit"
+                class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+          Transcribe &amp; Summarise
+        </button>
+        <span id="audio-spinner"
+              class="htmx-indicator text-xs text-gray-400 animate-pulse">
+          Whisper transcribing → LLM summarising…
+        </span>
+      </div>
+    </div>
+  </form>
+
+  <div id="audio-result"></div>
+
+</div>

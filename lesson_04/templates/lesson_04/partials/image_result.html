@@ -1,0 +1,30 @@
+{# Image generation result partial #}
+{% if error %}
+  <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+    {{ error }}
+  </div>
+{% else %}
+
+  <div class="space-y-3">
+
+    {# Generated image #}
+    <div class="border border-fuchsia-200 rounded-xl overflow-hidden">
+      <img src="{{ data.url }}" alt="{{ prompt }}"
+           class="w-full object-cover rounded-xl shadow">
+    </div>
+
+    {# Prompt / revised prompt info #}
+    <div class="bg-fuchsia-50 border border-fuchsia-100 rounded-lg px-4 py-3 text-xs text-gray-700 space-y-1">
+      <p><span class="font-semibold text-fuchsia-700">Original prompt:</span> {{ prompt }}</p>
+      {% if data.revised_prompt and data.revised_prompt != prompt %}
+        <p><span class="font-semibold text-fuchsia-700">Revised by DALL-E:</span> {{ data.revised_prompt }}</p>
+      {% endif %}
+    </div>
+
+    <p class="text-xs text-gray-400 italic">
+      Image URL expires after ~60 minutes. Right-click the image to save it.
+    </p>
+
+  </div>
+
+{% endif %}

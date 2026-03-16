@@ -1,0 +1,30 @@
+{# Partial: list of MCP tools with name, description, schema badge #}
+{% if tools %}
+  <div class="border border-gray-200 rounded-xl overflow-hidden">
+    <div class="bg-gray-50 px-5 py-3 border-b flex items-center justify-between">
+      <h3 class="font-medium text-gray-700 text-sm">Registered MCP Tools</h3>
+      <span class="bg-teal-100 text-teal-700 text-xs px-2 py-0.5 rounded-full">
+        {{ tools|length }} tool{{ tools|length|pluralize }}
+      </span>
+    </div>
+    <div class="divide-y divide-gray-100">
+      {% for tool in tools %}
+        <div class="px-5 py-3 flex items-start gap-3">
+          <span class="font-mono text-sm font-semibold text-teal-700 w-40 flex-shrink-0 pt-0.5">
+            {{ tool.name }}
+          </span>
+          <span class="text-sm text-gray-600 flex-1">
+            {{ tool.description|default:"No description." }}
+          </span>
+          {% if tool.input_schema %}
+            <span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded font-mono flex-shrink-0">
+              schema
+            </span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% else %}
+  <p class="text-sm text-gray-400 italic">No tools returned by the MCP server.</p>
+{% endif %}

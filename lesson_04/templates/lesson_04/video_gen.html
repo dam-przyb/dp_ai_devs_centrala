@@ -1,0 +1,39 @@
+{# Video generation workspace partial — prompt form #}
+<div class="p-6 max-w-3xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Video Generation</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Enter a text prompt to generate a short video clip.
+      The job is created immediately and HTMX <strong>polls every 5 seconds</strong>
+      until the video is ready — demonstrating the async polling pattern.
+    </p>
+    <p class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-1.5 mt-2">
+      Demo: video generation is <strong>mocked</strong>. A real integration would use
+      Kling or Luma AI (requires <code>KLING_API_KEY</code>).
+    </p>
+  </div>
+
+  <form hx-post="{% url 'l04_video_gen_api' %}"
+        hx-target="#video-result"
+        hx-swap="innerHTML"
+        hx-indicator="#video-spinner"
+        hx-on::after-request="this.reset()"
+        class="space-y-3">
+    {% csrf_token %}
+    <textarea name="prompt" rows="3"
+              placeholder="e.g. A serene mountain lake at sunrise with mist rolling over the water"
+              class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"></textarea>
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+        Generate Video
+      </button>
+      <span id="video-spinner"
+            class="htmx-indicator text-xs text-gray-400 animate-pulse">Submitting job…</span>
+    </div>
+  </form>
+
+  <div id="video-result"></div>
+
+</div>

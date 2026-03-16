@@ -1,0 +1,53 @@
+{# Upload MCP — upload a file and process it via the MCP agent #}
+<div class="p-6 max-w-3xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">Upload MCP — File Upload + Agent Processing</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Upload a text file. It will be saved to the <code>sandbox/</code> directory and then the
+      MCP filesystem agent will read and summarize it — demonstrating a full upload-to-agent pipeline.
+    </p>
+  </div>
+
+  <form hx-post="{% url 'l03_upload_mcp_api' %}"
+        hx-target="#upload-result"
+        hx-swap="innerHTML"
+        hx-indicator="#upload-spinner"
+        hx-encoding="multipart/form-data"
+        class="border border-gray-200 rounded-xl overflow-hidden">
+    {% csrf_token %}
+
+    <div class="bg-gray-50 px-5 py-3 border-b">
+      <h3 class="font-medium text-gray-700 text-sm">Choose File</h3>
+    </div>
+
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-2">
+          Text file (e.g. <code>.txt</code>, <code>.md</code>)
+        </label>
+        <input type="file" name="file" accept=".txt,.md,.csv,.json,.py,.js,.html"
+               class="block w-full text-sm text-gray-600
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-sm file:font-medium
+                      file:bg-emerald-50 file:text-emerald-700
+                      hover:file:bg-emerald-100 cursor-pointer">
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button type="submit"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+          Upload &amp; Summarize
+        </button>
+        <span id="upload-spinner"
+              class="htmx-indicator text-xs text-gray-400 animate-pulse">
+          Uploading → MCP agent reading → LLM summarizing…
+        </span>
+      </div>
+    </div>
+  </form>
+
+  <div id="upload-result"></div>
+
+</div>

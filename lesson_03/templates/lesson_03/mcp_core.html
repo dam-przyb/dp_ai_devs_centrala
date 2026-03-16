@@ -1,0 +1,67 @@
+{# MCP Core — tool explorer workspace partial #}
+<div class="p-6 max-w-4xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-lg">MCP Core — Tool Explorer</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Discover and call tools exposed by the configured MCP server (<code>MCP_SERVER_SCRIPT</code>).
+      This view uses the raw <strong>MCP Python SDK</strong> — no LangChain involved.
+    </p>
+  </div>
+
+  {% if error %}
+    <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+      <strong>MCP server error:</strong> {{ error }}
+      <p class="mt-1 text-xs text-red-500">
+        Make sure <code>MCP_SERVER_SCRIPT</code> is set in your <code>.env</code>
+        and the command is runnable (e.g. <code>npx -y @modelcontextprotocol/server-filesystem /tmp</code>).
+      </p>
+    </div>
+  {% else %}
+
+    {# ── Tool registry ──────────────────────────────────────────────────── #}
+    {% include "lesson_03/partials/tool_list.html" with tools=tools %}
+
+    {# ── Call a tool ────────────────────────────────────────────────────── #}
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <div class="bg-gray-50 px-5 py-3 border-b">
+        <h3 class="font-medium text-gray-700 text-sm">Call a Tool Directly</h3>
+        <p class="text-xs text-gray-500 mt-0.5">
+          Enter the tool name and a JSON object of arguments, then click <em>Call</em>.
+        </p>
+      </div>
+      <div class="p-5 space-y-3">
+        <form hx-post="{% url 'l03_mcp_core_api' %}"
+              hx-target="#mcp-core-result"
+              hx-swap="innerHTML"
+              hx-indicator="#mcp-core-spinner"
+              class="space-y-3">
+          {% csrf_token %}
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label class="block text-xs text-gray-500 mb-1">Tool name</label>
+              <input type="text" name="tool_name" placeholder="e.g. read_file"
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Arguments (JSON)</label>
+            <input type="text" name="tool_args" placeholder='e.g. {"path": "notes.txt"}'
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+          <div class="flex items-center gap-3">
+            <button type="submit"
+                    class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+              Call Tool
+            </button>
+            <span id="mcp-core-spinner"
+                  class="htmx-indicator text-xs text-gray-400 animate-pulse">Calling MCP…</span>
+          </div>
+        </form>
+
+        <div id="mcp-core-result"></div>
+      </div>
+    </div>
+
+  {% endif %}
+</div>

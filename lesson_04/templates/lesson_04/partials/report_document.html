@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body        { font-family: Georgia, serif; margin: 2cm; color: #1a1a1a; }
+    h1          { font-size: 28pt; border-bottom: 2px solid #333; padding-bottom: 0.3cm; margin-bottom: 0.5cm; }
+    h2          { font-size: 16pt; margin-top: 1cm; margin-bottom: 0.2cm; color: #2d2d2d; }
+    p           { font-size: 11pt; line-height: 1.6; white-space: pre-wrap; }
+    .page-break { page-break-after: always; }
+  </style>
+</head>
+<body>
+  <h1>{{ title }}</h1>
+  {% for section in sections %}
+    {% if section.heading or section.body %}
+      <section>
+        {% if section.heading %}<h2>{{ section.heading }}</h2>{% endif %}
+        {% if section.body %}<p>{{ section.body }}</p>{% endif %}
+      </section>
+    {% endif %}
+  {% endfor %}
+</body>
+</html>
