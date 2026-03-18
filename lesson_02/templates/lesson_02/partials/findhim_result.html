@@ -1,0 +1,128 @@
+{# HTMX partial — findhim agent result #}
+{% if error %}
+  <!-- Error Display -->
+  <div class="p-6 bg-red-50 border border-red-300 rounded-lg">
+    <div class="flex items-start gap-3">
+      <svg class="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <h3 class="text-lg font-semibold text-red-800 mb-1">Quest Failed</h3>
+        <p class="text-red-700">{{ error }}</p>
+        <p class="text-sm text-red-600 mt-2">
+          Check the error above. Make sure <code>AIDEVSKEY</code> and <code>OPENROUTERKEY</code>
+          are set in your <code>.env</code> file.
+        </p>
+      </div>
+    </div>
+  </div>
+
+{% elif data %}
+
+  <!-- Phase 1 search summary -->
+  {% if data.search_summary %}
+  <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+    <p class="text-sm font-semibold text-blue-800 mb-1">Phase 1 — Python Search Result</p>
+    <p class="text-sm text-blue-700 font-mono">{{ data.search_summary }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Flag / Output Banner -->
+  <div class="mb-8 p-8 bg-gradient-to-r from-violet-500 to-violet-700 rounded-lg shadow-lg text-white">
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-3">
+          <svg class="w-8 h-8 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h2 class="text-2xl font-bold">Investigation Complete!</h2>
+        </div>
+        <p class="text-base font-mono font-semibold tracking-wide whitespace-pre-wrap leading-relaxed">
+          {{ data.output }}
+        </p>
+      </div>
+      <button
+        onclick="navigator.clipboard.writeText('{{ data.output|escapejs }}')"
+        class="flex-shrink-0 px-4 py-2 bg-white text-violet-700 font-semibold rounded-lg hover:bg-violet-50 transition-colors text-sm"
+        title="Copy output to clipboard"
+      >
+        Copy
+      </button>
+    </div>
+    <p class="mt-4 text-violet-200 text-sm">
+      If a flag was received, enter it at
+      <a href="https://hub.ag3nts.org/" target="_blank" class="underline font-semibold">hub.ag3nts.org</a>.
+      Answer saved → <code class="text-violet-100">{{ data.answer_path }}</code>
+    </p>
+  </div>
+
+  <!-- Workflow Steps -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold text-gray-800 mb-4">Workflow Progress</h3>
+    <div class="space-y-3">
+      <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+        <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
+        <div>
+          <div class="font-semibold text-gray-800">Queried suspect sightings</div>
+          <div class="text-sm text-gray-600">Called <code>/api/location</code> for each suspect in the list</div>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+        <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
+        <div>
+          <div class="font-semibold text-gray-800">Calculated distances</div>
+          <div class="text-sm text-gray-600">Used Haversine formula to compare GPS sightings against all 7 power plant locations</div>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+        <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
+        <div>
+          <div class="font-semibold text-gray-800">Retrieved access level</div>
+          <div class="text-sm text-gray-600">Called <code>/api/accesslevel</code> for the identified suspect</div>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+        <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">4</div>
+        <div>
+          <div class="font-semibold text-gray-800">Submitted to verification hub</div>
+          <div class="text-sm text-gray-600">POSTed <code>name, surname, accessLevel, powerPlant</code> to <code>/verify</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool call trace (collapsible) -->
+  {% if data.steps %}
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+      Agent Tool Call Trace
+      <span class="text-base font-normal text-gray-500 ml-2">({{ data.steps|length }} calls)</span>
+    </h3>
+    <details class="rounded-lg border border-gray-200 overflow-hidden">
+      <summary class="bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100">
+        Show / hide tool call log
+      </summary>
+      <div class="divide-y divide-gray-100">
+        {% for step in data.steps %}
+        <div class="px-4 py-3 text-xs">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="bg-violet-100 text-violet-700 px-2 py-0.5 rounded font-mono font-semibold">
+              #{{ step.iteration }} {{ step.tool }}
+            </span>
+          </div>
+          <div class="text-gray-500 mb-0.5">
+            <span class="font-medium">Input:</span>
+            <code class="ml-1 break-all">{{ step.input }}</code>
+          </div>
+          <div class="text-gray-700">
+            <span class="font-medium">Output:</span>
+            <code class="ml-1 break-all">{{ step.output }}</code>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+  </div>
+  {% endif %}
+
+{% endif %}

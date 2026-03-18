@@ -1,8 +1,13 @@
 import csv
+import json
+import pathlib
 import requests
 from pydantic import BaseModel, Field
 from django.conf import settings
 from langchain_openai import ChatOpenAI
+
+# Path to the task context folder for saving answer.json
+_TASK_CONTEXT_DIR = pathlib.Path(__file__).parent.parent / "0101task_context"
 
 
 # ── Pydantic Models ──────────────────────────────────────────────────────────
@@ -178,6 +183,12 @@ def submit_to_verify(api_key: str, people: list[PersonWithTags]) -> dict:
         "task": "people",
         "answer": answer
     }
+
+    # Save answer payload to answer.json for verification reference
+    _TASK_CONTEXT_DIR.mkdir(parents=True, exist_ok=True)
+    answer_path = _TASK_CONTEXT_DIR / "answer.json"
+    with open(answer_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
 
     # Submit to hub
     response = requests.post(

@@ -1,0 +1,10 @@
+{
+  "apikey": "tutaj-twój-klucz",
+  "task": "findhim",
+  "answer": {
+    "name": "Jan",
+    "surname": "Kowalski",
+    "accessLevel": 3,
+    "powerPlant": "PWR1234PL"
+  }
+}

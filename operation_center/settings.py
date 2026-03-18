@@ -112,3 +112,8 @@ MCP_SERVER_SCRIPT = os.getenv("MCP_SERVER_SCRIPT", "")
 
 # AI Devs API Key (Quest task)
 AIDEVS_API_KEY = os.getenv("AIDEVSKEY", "")
+
+# Model used specifically for the findhim investigation agent.
+# Can be overridden via FINDHIM_MODEL env var to use a stronger model when
+# gpt-4o-mini makes reasoning errors on the multi-step distance-comparison task.
+FINDHIM_MODEL = os.getenv("FINDHIM_MODEL", "openai/gpt-5.4-mini")

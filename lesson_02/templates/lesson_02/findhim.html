@@ -1,0 +1,80 @@
+<div class="p-8 max-w-5xl mx-auto">
+
+  <!-- Header -->
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">Quest — FindHim</h1>
+    <p class="text-gray-600">
+      Identify which suspect from the S01E01 people list was seen near a Polish nuclear
+      power plant. The agent queries sighting coordinates for each suspect, calculates
+      Haversine distances to every known power plant, retrieves the closest suspect's
+      access level, and submits the completed report to the verification hub.
+    </p>
+  </header>
+
+  <!-- Action Section -->
+  <div class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+    <form hx-post="{% url 'l02_findhim_api' %}"
+          hx-target="#findhim-result"
+          hx-swap="innerHTML"
+          hx-indicator="#loading-spinner">
+      {% csrf_token %}
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <h2 class="text-xl font-semibold text-gray-800 mb-1">Execute Investigation</h2>
+          <p class="text-sm text-gray-600">
+            This process may take 30–90 seconds due to multiple API calls and LLM reasoning.
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div>
+            <label for="model-select" class="block text-xs text-gray-500 mb-1">LLM Model</label>
+            <select name="model" id="model-select"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+              {% for value, label in available_models %}
+                <option value="{{ value }}" {% if value == default_model %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="pt-4">
+            <button type="submit"
+                    class="px-6 py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 transition-colors">
+              Run Agent
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div id="loading-spinner" class="htmx-indicator mt-4 p-4 bg-violet-50 border border-violet-200 rounded-lg">
+        <div class="flex items-center gap-3">
+          <svg class="animate-spin h-5 w-5 text-violet-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-violet-700 font-medium">Agent running — querying sightings and calculating distances…</span>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Result Container -->
+  <div id="findhim-result" class="mt-8">
+    <!-- Results injected here by HTMX -->
+  </div>
+
+  <!-- Workflow Steps Info -->
+  <div class="mt-12 p-6 bg-gray-50 rounded-lg border border-gray-200">
+    <h3 class="text-lg font-semibold text-gray-800 mb-3">Agent Workflow Steps:</h3>
+    <ol class="list-decimal list-inside space-y-2 text-gray-700">
+      <li><strong>Query sightings</strong> — POST <code>/api/location</code> for each of the 5 suspects</li>
+      <li><strong>Calculate distances</strong> — Haversine formula for every sighting vs every power plant</li>
+      <li><strong>Identify target</strong> — suspect with minimum distance to any plant</li>
+      <li><strong>Retrieve access level</strong> — POST <code>/api/accesslevel</code> with birth year</li>
+      <li><strong>Submit answer</strong> — POST <code>/verify</code> with name, accessLevel, powerPlant code</li>
+      <li><strong>Display flag</strong> — show the <code>{% templatetag openvariable %}FLG:...{% templatetag closevariable %}</code> response from the hub</li>
+    </ol>
+  </div>
+
+</div>

@@ -49,6 +49,11 @@ NAV = [
                 "label": "FS Agent",
                 "url_name": "l02_tool_use",
             },
+            {
+                "slug": "findhim",
+                "label": "Quest",
+                "url_name": "l02_findhim",
+            },
         ],
     },
     {
