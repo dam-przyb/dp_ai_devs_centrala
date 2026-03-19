@@ -22,27 +22,14 @@
         <div class="flex-1">
           <h2 class="text-xl font-semibold text-gray-800 mb-1">Execute Investigation</h2>
           <p class="text-sm text-gray-600">
-            This process may take 30–90 seconds due to multiple API calls and LLM reasoning.
+            This process may take 30–90 seconds due to multiple API calls and distance calculations.
           </p>
         </div>
-        <div class="flex items-center gap-3">
-          <div>
-            <label for="model-select" class="block text-xs text-gray-500 mb-1">LLM Model</label>
-            <select name="model" id="model-select"
-                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
-              {% for value, label in available_models %}
-                <option value="{{ value }}" {% if value == default_model %}selected{% endif %}>
-                  {{ label }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="pt-4">
-            <button type="submit"
-                    class="px-6 py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 transition-colors">
-              Run Agent
-            </button>
-          </div>
+        <div class="pt-4">
+          <button type="submit"
+                  class="px-6 py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 transition-colors">
+            Run Agent
+          </button>
         </div>
       </div>
 

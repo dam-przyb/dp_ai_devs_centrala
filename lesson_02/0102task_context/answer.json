@@ -2,9 +2,9 @@
   "apikey": "9b2b37d3-dfab-42e0-a4b2-d84454981394",
   "task": "findhim",
   "answer": {
-    "name": "Jacek",
-    "surname": "Nowak",
-    "accessLevel": 1,
-    "powerPlant": "PWR7264PL"
+    "name": "Wojciech",
+    "surname": "Bielik",
+    "accessLevel": 7,
+    "powerPlant": "PWR2758PL"
   }
 }

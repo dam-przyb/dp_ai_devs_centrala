@@ -1,363 +1,367 @@
 """
 findhim_agent_service.py
 ========================
-Hybrid investigation service for the S01E02 "findhim" task.
-
-Architecture
-------------
-Phase 1 — Pure Python (deterministic):
-  • Fetch GPS sightings for ALL suspects via /api/location
-  • Calculate Haversine distances to every power plant
-  • Identify the (suspect, plant) pair with the minimum distance
-
-Phase 2 — LLM agent (Function Calling):
-  • get_access_level  — POST /api/accesslevel for the identified suspect
-  • submit_answer     — POST /verify, save answer.json, return flag
-
-Why Python handles Phase 1:
-  The LLM must call haversine_distance 5 suspects × 7 plants × N sightings
-  times and track a global minimum — a task that small models routinely fail
-  by anchoring on the first promising result. Python does it in a tight loop
-  with no risk of reasoning drift.
-
-Why coordinates are hardcoded:
-  The findhim_locations.json API returns only {code, is_active, power} per
-  site — no GPS coordinates. We supply city-centre approximations (±1 km).
+Supervisor-driven tool agent for the S01E02 "findhim" quest.
 """
 
 import json
 import math
 from pathlib import Path
+from typing import Any
 
 import httpx
 from django.conf import settings
-from langchain_openai import ChatOpenAI
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_openai import ChatOpenAI
 
 # =============================================================================
-# Constants & static data
+# Module configuration
 # =============================================================================
+
+# Set explicit model here for this module only.
+# Keep empty string to use the module default below.
+FINDHIM_MODEL_OVERRIDE = ""
+DEFAULT_FINDHIM_MODEL = "openai/gpt-5.4-mini"
+MAX_AGENT_ITERATIONS = 12
 
 _TASK_DIR = Path(__file__).resolve().parent.parent / "0102task_context"
 _HUB_BASE = "https://hub.ag3nts.org"
 
-# City-centre GPS coordinates for each power plant location.
-# Source: findhim_locations.json has NO coordinates — only codes and power
-# ratings. These are manually looked-up city-centre approximations (±1 km).
 _PLANT_COORDS: dict[str, tuple[float, float]] = {
-    "Grudziądz":             (53.4836, 18.7536),
-    "Zabrze":                (50.3249, 18.7857),
-    "Piotrków Trybunalski":  (51.4060, 19.7041),
-    "Tczew":                 (54.0952, 18.7774),
-    "Radom":                 (51.4027, 21.1471),
-    "Chelmno":               (53.3511, 18.4238),
-    "Żarnowiec":             (54.7039, 18.1408),
+    "Grudziądz": (53.4836, 18.7536),
+    "Zabrze": (50.3249, 18.7857),
+    "Piotrków Trybunalski": (51.4060, 19.7041),
+    "Tczew": (54.0952, 18.7774),
+    "Radom": (51.4027, 21.1471),
+    "Chelmno": (53.3511, 18.4238),
+    "Żarnowiec": (54.7039, 18.1408),
 }
-
-MAX_AGENT_ITERATIONS = 10
 
 
 # =============================================================================
-# Phase 1 — Pure-Python helpers (deterministic, no LLM involved)
+# Data and HTTP helpers
 # =============================================================================
 
 def _api_key() -> str:
-    """Return the AI Devs API key; raise clearly if missing."""
+    """Return AI Devs API key or raise a clear configuration error."""
     key = getattr(settings, "AIDEVS_API_KEY", "")
     if not key:
-        raise RuntimeError(
-            "AIDEVS_API_KEY is not set. "
-            "Please configure the AIDEVSKEY environment variable."
-        )
+        raise RuntimeError("AIDEVS_API_KEY is not set. Configure AIDEVSKEY in .env.")
     return key
 
 
+def _resolve_model(model: str | None = None) -> str:
+    """Resolve model with explicit module override, then argument, then default."""
+    return (FINDHIM_MODEL_OVERRIDE or model or DEFAULT_FINDHIM_MODEL).strip()
+
+
+def _safe_json(resp: httpx.Response) -> Any:
+    """Parse JSON safely; return None for non-JSON responses."""
+    try:
+        return resp.json()
+    except Exception:
+        return None
+
+
+def _post_json(
+    *,
+    endpoint: str,
+    payload: dict,
+    timeout: int,
+    api_log: list[dict],
+) -> tuple[int, Any, str]:
+    """POST JSON, append structured API log entry, and return status/body."""
+    try:
+        resp = httpx.post(f"{_HUB_BASE}{endpoint}", json=payload, timeout=timeout)
+        parsed = _safe_json(resp)
+        text = resp.text
+        api_log.append(
+            {
+                "endpoint": endpoint,
+                "request": payload,
+                "status_code": resp.status_code,
+                "response_json": parsed,
+                "response_text": text,
+            }
+        )
+        return resp.status_code, parsed, text
+    except Exception as exc:
+        api_log.append(
+            {
+                "endpoint": endpoint,
+                "request": payload,
+                "status_code": None,
+                "response_json": None,
+                "response_text": "",
+                "error": str(exc),
+            }
+        )
+        raise RuntimeError(f"Request to {endpoint} failed: {exc}") from exc
+
+
 def _load_suspects() -> list[dict]:
-    """Load the suspect list saved from S01E01."""
-    raw = (_TASK_DIR / "suspect_list.json").read_text(encoding="utf-8")
-    data = json.loads(raw)
-    if isinstance(data, dict) and "answer" in data:
-        return data["answer"]
-    return data
+    """Load suspect list from S01E01 output file."""
+    data = json.loads((_TASK_DIR / "suspect_list.json").read_text(encoding="utf-8"))
+    suspects = data.get("answer", data) if isinstance(data, dict) else data
+    if not isinstance(suspects, list):
+        raise RuntimeError("suspect_list.json must contain a list of suspects.")
+    return suspects
 
 
 def _load_plants() -> dict[str, dict]:
-    """
-    Load powerplants.json and enrich each entry with lat/lon coordinates.
-
-    Returns a dict keyed by city name:
-      {city: {code, is_active, power, lat, lon}}
-    """
-    raw = (_TASK_DIR / "powerplants.json").read_text(encoding="utf-8")
-    plants_raw: dict = json.loads(raw).get("power_plants", {})
-    result = {}
+    """Load power plant list and enrich each item with configured coordinates."""
+    raw = json.loads((_TASK_DIR / "powerplants.json").read_text(encoding="utf-8"))
+    plants_raw = raw.get("power_plants", {})
+    if not isinstance(plants_raw, dict):
+        raise RuntimeError("powerplants.json must contain 'power_plants' object.")
+    out: dict[str, dict] = {}
     for city, info in plants_raw.items():
         lat, lon = _PLANT_COORDS.get(city, (None, None))
-        result[city] = {**info, "lat": lat, "lon": lon}
-    return result
+        out[city] = {**info, "lat": lat, "lon": lon}
+    return out
+
+
+def _extract_coords(location_payload: Any) -> list[tuple[float, float]]:
+    """
+    Normalize location response to [(lat, lon), ...].
+
+    Supports both key variants:
+    - lat/lon
+    - latitude/longitude
+    """
+    if isinstance(location_payload, list):
+        records = location_payload
+    elif isinstance(location_payload, dict):
+        records = location_payload.get("locations", [])
+    else:
+        records = []
+
+    coords: list[tuple[float, float]] = []
+    for item in records:
+        if not isinstance(item, dict):
+            continue
+        lat = item.get("lat", item.get("latitude"))
+        lon = item.get("lon", item.get("longitude"))
+        if lat is None or lon is None:
+            continue
+        try:
+            coords.append((float(lat), float(lon)))
+        except (TypeError, ValueError):
+            continue
+    return coords
 
 
 def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Return great-circle distance in km between two GPS points."""
-    R = 6371.0
+    """Compute great-circle distance in kilometers."""
+    earth_radius_km = 6371.0
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
-    a = (math.sin(dphi / 2) ** 2
-         + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2)
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-
-def _fetch_all_sightings(suspects: list[dict]) -> dict[tuple, list[tuple]]:
-    """
-    POST /api/location for every suspect and return a map of sightings.
-
-    Returns:
-        {(name, surname): [(lat, lon), ...]}
-    """
-    result: dict[tuple, list[tuple]] = {}
-    key = _api_key()
-    for s in suspects:
-        resp = httpx.post(
-            f"{_HUB_BASE}/api/location",
-            json={"apikey": key, "name": s["name"], "surname": s["surname"]},
-            timeout=15,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        # API may return a plain list or a dict like {"locations": [...]}
-        raw_locs = data if isinstance(data, list) else data.get("locations", [])
-        coords = [
-            (float(loc["lat"]), float(loc["lon"]))
-            for loc in raw_locs
-            if "lat" in loc and "lon" in loc
-        ]
-        result[(s["name"], s["surname"])] = coords
-    return result
-
-
-def _find_closest_to_plant(
-    sightings: dict[tuple, list[tuple]],
-    plants: dict[str, dict],
-) -> tuple[str, str, str, float]:
-    """
-    Iterate every sighting × every plant and return the best match.
-
-    Returns:
-        (name, surname, plant_code, distance_km)
-    """
-    best_name = best_surname = best_code = ""
-    best_dist = float("inf")
-
-    for (name, surname), coords in sightings.items():
-        for lat, lon in coords:
-            for city, plant in plants.items():
-                if plant["lat"] is None or plant["lon"] is None:
-                    continue
-                dist = _haversine(lat, lon, plant["lat"], plant["lon"])
-                if dist < best_dist:
-                    best_dist = dist
-                    best_name = name
-                    best_surname = surname
-                    best_code = plant["code"]
-
-    return best_name, best_surname, best_code, best_dist
-
-
-# =============================================================================
-# Phase 2 — LLM agent tools (access level + submission only)
-# =============================================================================
-
-@tool
-def get_access_level(name: str, surname: str, birth_year: int) -> str:
-    """
-    Retrieve the access level for a suspect from the hub access-level API.
-
-    Args:
-        name (str): Suspect's first name.
-        surname (str): Suspect's surname.
-        birth_year (int): Year of birth as an integer (e.g. 1987).
-
-    Returns:
-        str: JSON-encoded response containing accessLevel, or an error message.
-    """
-    try:
-        resp = httpx.post(
-            f"{_HUB_BASE}/api/accesslevel",
-            json={
-                "apikey": _api_key(),
-                "name": name,
-                "surname": surname,
-                "birthYear": int(birth_year),
-            },
-            timeout=15,
-        )
-        resp.raise_for_status()
-        return json.dumps(resp.json())
-    except Exception as exc:
-        return f"ERROR fetching access level for {name} {surname}: {exc}"
-
-
-@tool
-def submit_answer(name: str, surname: str, access_level: int, power_plant: str) -> str:
-    """
-    Submit the findhim answer to the verification endpoint.
-
-    answer.json is written BEFORE the POST so the file always reflects exactly
-    what was sent, even if the request fails.
-
-    Args:
-        name (str): Suspect's first name.
-        surname (str): Suspect's surname.
-        access_level (int): Access level from /api/accesslevel.
-        power_plant (str): Power plant code (format PWR0000PL).
-
-    Returns:
-        str: Full server response body (flag if correct, error detail if not).
-    """
-    payload = {
-        "apikey": _api_key(),
-        "task": "findhim",
-        "answer": {
-            "name": name,
-            "surname": surname,
-            "accessLevel": int(access_level),
-            "powerPlant": power_plant,
-        },
-    }
-
-    # Save BEFORE posting — file always matches what was actually sent
-    answer_path = _TASK_DIR / "answer.json"
-    answer_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    try:
-        resp = httpx.post(f"{_HUB_BASE}/verify", json=payload, timeout=20)
-        body = resp.text
-        if resp.status_code >= 400:
-            return (
-                f"ERROR {resp.status_code} from /verify. "
-                f"Payload sent: {json.dumps(payload['answer'])}. "
-                f"Server response: {body}"
-            )
-        return body
-    except Exception as exc:
-        return (
-            f"ERROR submitting answer: {exc}. "
-            f"Payload was: {json.dumps(payload['answer'])}"
-        )
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return earth_radius_km * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 # =============================================================================
 # Main runner
 # =============================================================================
 
-_AGENT_TOOLS = [get_access_level, submit_answer]
-
-
 def run_findhim_agent(model: str | None = None) -> dict:
     """
-    Execute the findhim investigation using a hybrid approach.
-
-    Phase 1 (Python): fetch all sightings, calculate all distances, find winner.
-    Phase 2 (LLM):    retrieve access level and submit the answer.
-
-    Args:
-        model (str | None): OpenRouter model string to use for Phase 2.
-            Defaults to settings.FINDHIM_MODEL.
+    Run supervisor-driven tool loop for findhim.
 
     Returns:
-        dict: {
-            "output": str,          # final agent answer
-            "steps": list[dict],    # tool call trace (Phase 2 only)
-            "answer_path": str,     # path to saved answer.json
-            "search_summary": str,  # Phase 1 result summary
-        }
+        dict with output, steps, answer_path, search_summary, api_log.
     """
     suspects = _load_suspects()
     plants = _load_plants()
-    chosen_model = model or getattr(settings, "FINDHIM_MODEL", "openai/gpt-4o")
+    api_log: list[dict] = []
+    runtime: dict[str, Any] = {"search_summary": ""}
 
-    # ── Phase 1: deterministic search ────────────────────────────────────────
-    sightings = _fetch_all_sightings(suspects)
-    target_name, target_surname, plant_code, distance_km = _find_closest_to_plant(
-        sightings, plants
+    @tool
+    def identify_closest_suspect() -> str:
+        """
+        Find suspect closest to any known power plant using location API and Haversine.
+
+        Returns JSON:
+        {
+          "name": str,
+          "surname": str,
+          "birthYear": int,
+          "powerPlant": str,
+          "plantCity": str,
+          "distanceKm": float
+        }
+        """
+        best: dict[str, Any] = {"distanceKm": float("inf")}
+        total_points = 0
+
+        for suspect in suspects:
+            payload = {
+                "apikey": _api_key(),
+                "name": suspect["name"],
+                "surname": suspect["surname"],
+            }
+            status, data, body = _post_json(
+                endpoint="/api/location",
+                payload=payload,
+                timeout=15,
+                api_log=api_log,
+            )
+            if status >= 400:
+                raise RuntimeError(
+                    f"/api/location failed for {suspect['name']} {suspect['surname']} "
+                    f"(status {status}): {body}"
+                )
+
+            coords = _extract_coords(data)
+            total_points += len(coords)
+
+            for lat, lon in coords:
+                for city, plant in plants.items():
+                    if plant["lat"] is None or plant["lon"] is None:
+                        continue
+                    distance_km = _haversine(lat, lon, plant["lat"], plant["lon"])
+                    if distance_km < best["distanceKm"]:
+                        best = {
+                            "name": suspect["name"],
+                            "surname": suspect["surname"],
+                            "birthYear": int(suspect["born"]),
+                            "powerPlant": plant["code"],
+                            "plantCity": city,
+                            "distanceKm": round(distance_km, 4),
+                        }
+
+        if best["distanceKm"] == float("inf"):
+            raise RuntimeError(
+                "No valid GPS coordinates from /api/location. "
+                "Check API response format (lat/lon vs latitude/longitude)."
+            )
+
+        runtime["search_summary"] = (
+            f"Closest match: {best['name']} {best['surname']} — "
+            f"{best['distanceKm']:.2f} km from plant {best['powerPlant']} "
+            f"({best['plantCity']}); parsed points: {total_points}"
+        )
+        return json.dumps(best, ensure_ascii=False)
+
+    @tool
+    def get_access_level(name: str, surname: str, birth_year: int) -> str:
+        """Get suspect access level from /api/accesslevel and return JSON response."""
+        payload = {
+            "apikey": _api_key(),
+            "name": name,
+            "surname": surname,
+            "birthYear": int(birth_year),
+        }
+        status, data, body = _post_json(
+            endpoint="/api/accesslevel",
+            payload=payload,
+            timeout=15,
+            api_log=api_log,
+        )
+        if status >= 400:
+            raise RuntimeError(f"/api/accesslevel failed (status {status}): {body}")
+        if not isinstance(data, dict):
+            raise RuntimeError(f"/api/accesslevel returned non-JSON body: {body}")
+        return json.dumps(data, ensure_ascii=False)
+
+    @tool
+    def submit_answer(name: str, surname: str, access_level: int, power_plant: str) -> str:
+        """Submit final payload to /verify and return response text."""
+        payload = {
+            "apikey": _api_key(),
+            "task": "findhim",
+            "answer": {
+                "name": name,
+                "surname": surname,
+                "accessLevel": int(access_level),
+                "powerPlant": power_plant,
+            },
+        }
+        answer_path = _TASK_DIR / "answer.json"
+        answer_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        status, _, body = _post_json(
+            endpoint="/verify",
+            payload=payload,
+            timeout=20,
+            api_log=api_log,
+        )
+        if status >= 400:
+            return (
+                f"ERROR {status} from /verify. "
+                f"Payload sent: {json.dumps(payload['answer'], ensure_ascii=False)}. "
+                f"Server response: {body}"
+            )
+        return body
+
+    tools = [identify_closest_suspect, get_access_level, submit_answer]
+    tool_map = {t.name: t for t in tools}
+
+    supervisor_prompt = (
+        "You are the FindHim supervisor agent.\n"
+        "Your task is to solve quest 'findhim' strictly via tools.\n"
+        "You must execute exactly this sequence:\n"
+        "1) Call identify_closest_suspect once.\n"
+        "2) From its JSON result, call get_access_level(name, surname, birth_year) once.\n"
+        "3) From both results, call submit_answer(name, surname, access_level, power_plant) once.\n"
+        "Rules:\n"
+        "- Do not invent or modify suspect identity, birth year, or power plant code.\n"
+        "- Use access level exactly as returned by get_access_level.\n"
+        "- After submit_answer, return only a short final status with flag or error.\n"
     )
 
-    # Look up birth year for the winner from the suspects list
-    target_suspect = next(
-        (s for s in suspects
-         if s["name"] == target_name and s["surname"] == target_surname),
-        None,
-    )
-    birth_year = target_suspect["born"] if target_suspect else 0
-
-    search_summary = (
-        f"Closest match: {target_name} {target_surname} "
-        f"— {distance_km:.2f} km from plant {plant_code} "
-        f"(born {birth_year})"
-    )
-
-    # ── Phase 2: LLM agent for access level + submission ─────────────────────
     llm = ChatOpenAI(
-        model=chosen_model,
+        model=_resolve_model(model),
         api_key=settings.OPENROUTER_API_KEY,
         base_url=settings.OPENROUTER_BASE_URL,
         temperature=0,
-    ).bind_tools(_AGENT_TOOLS)
+    ).bind_tools(tools)
 
-    system_prompt = (
-        "You are a reporting assistant. The investigation has already identified "
-        "the suspect and the power plant. Your only job is:\n"
-        "1. Call get_access_level(name, surname, birth_year) exactly once.\n"
-        "2. Call submit_answer(name, surname, access_level, power_plant) with the "
-        "result.\n"
-        "3. Report the flag or error you received.\n"
-        "Do not change the name, surname, or power plant code you are given."
-    )
-
-    human_msg = (
-        f"Target suspect: {target_name} {target_surname} (born {birth_year}).\n"
-        f"Power plant code: {plant_code}.\n"
-        "Please retrieve their access level and submit the answer now."
-    )
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        HumanMessage(content=human_msg),
+    messages: list[Any] = [
+        {"role": "system", "content": supervisor_prompt},
+        HumanMessage(content="Start solving findhim now."),
     ]
-
     steps: list[dict] = []
-    final_answer = "Task completed."
+    final_output = "Task completed."
 
     for iteration in range(MAX_AGENT_ITERATIONS):
         response = llm.invoke(messages)
         messages.append(response)
 
         if not response.tool_calls:
-            final_answer = response.content
+            final_output = str(response.content)
             break
 
-        for tc in response.tool_calls:
-            tool_fn = next((t for t in _AGENT_TOOLS if t.name == tc["name"]), None)
-            tool_output = tool_fn.invoke(tc["args"]) if tool_fn else f"Unknown tool: {tc['name']}"
+        for tool_call in response.tool_calls:
+            tool_name = tool_call["name"]
+            tool_args = tool_call.get("args", {})
+            tool_obj = tool_map.get(tool_name)
+            if not tool_obj:
+                tool_output = f"Unknown tool requested: {tool_name}"
+            else:
+                try:
+                    tool_output = tool_obj.invoke(tool_args)
+                except Exception as exc:
+                    tool_output = f"ERROR executing {tool_name}: {exc}"
 
-            steps.append({
-                "iteration": iteration + 1,
-                "tool":      tc["name"],
-                "input":     tc["args"],
-                "output":    tool_output,
-            })
-            messages.append(ToolMessage(content=str(tool_output), tool_call_id=tc["id"]))
+            steps.append(
+                {
+                    "iteration": iteration + 1,
+                    "tool": tool_name,
+                    "input": tool_args,
+                    "output": tool_output,
+                }
+            )
+            messages.append(ToolMessage(content=str(tool_output), tool_call_id=tool_call["id"]))
     else:
-        final_answer = (
-            f"Agent reached the maximum iteration limit ({MAX_AGENT_ITERATIONS})."
-        )
+        final_output = f"Agent reached max iterations ({MAX_AGENT_ITERATIONS})."
 
     return {
-        "output":         final_answer,
-        "steps":          steps,
-        "answer_path":    str(_TASK_DIR / "answer.json"),
-        "search_summary": search_summary,
+        "output": final_output,
+        "steps": steps,
+        "answer_path": str(_TASK_DIR / "answer.json"),
+        "search_summary": runtime["search_summary"],
+        "api_log": api_log,
     }
-

@@ -91,6 +91,53 @@
     </div>
   </div>
 
+  {% if data.api_log %}
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+      API Request / Response Log
+      <span class="text-base font-normal text-gray-500 ml-2">({{ data.api_log|length }} calls)</span>
+    </h3>
+    <details class="rounded-lg border border-gray-200 overflow-hidden">
+      <summary class="bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100">
+        Show / hide API log
+      </summary>
+      <div class="divide-y divide-gray-100">
+        {% for call in data.api_log %}
+        <div class="px-4 py-3 text-xs">
+          <div class="mb-1">
+            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono font-semibold">
+              {{ call.endpoint }}
+            </span>
+            {% if call.status_code %}
+            <span class="ml-2 text-gray-600 font-mono">status {{ call.status_code }}</span>
+            {% endif %}
+          </div>
+          <div class="text-gray-500 mb-0.5">
+            <span class="font-medium">Request:</span>
+            <code class="ml-1 break-all">{{ call.request }}</code>
+          </div>
+          {% if call.error %}
+          <div class="text-red-700">
+            <span class="font-medium">Error:</span>
+            <code class="ml-1 break-all">{{ call.error }}</code>
+          </div>
+          {% else %}
+          <div class="text-gray-700 mb-0.5">
+            <span class="font-medium">Response JSON:</span>
+            <code class="ml-1 break-all">{{ call.response_json }}</code>
+          </div>
+          <div class="text-gray-700">
+            <span class="font-medium">Response Text:</span>
+            <code class="ml-1 break-all">{{ call.response_text }}</code>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+  </div>
+  {% endif %}
+
   <!-- Tool call trace (collapsible) -->
   {% if data.steps %}
   <div class="mb-8">
