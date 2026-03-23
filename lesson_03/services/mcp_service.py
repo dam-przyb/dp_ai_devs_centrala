@@ -13,6 +13,7 @@ OR via the sync wrappers which use asyncio.run().
 import asyncio
 import json
 import shlex
+from typing import Any, Optional
 
 from django.conf import settings
 
@@ -63,7 +64,10 @@ async def list_mcp_tools_async() -> list[dict]:
             {
                 "name": t.name,
                 "description": t.description or "",
-                "input_schema": t.inputSchema if hasattr(t, "inputSchema") else {},
+                # Use `or {}` rather than hasattr: inputSchema is always present on
+                # the Pydantic Tool model but may be None for argument-free tools.
+                # Passing None downstream would crash the schema builder.
+                "input_schema": t.inputSchema or {},
             }
             for t in result.tools
         ]
@@ -109,10 +113,11 @@ def call_mcp_tool(tool_name: str, tool_args: dict) -> str:
 
 async def run_langchain_agent_async(user_query: str) -> dict:
     """
-    Run a LangChain tool-calling agent whose tools are sourced from the MCP server.
+    Run a LangGraph ReAct agent whose tools are sourced from the MCP server.
 
-    Each tool call opens a fresh MCP session so the agent can be used with
-    standard LangChain AgentExecutor (which is not async-session-aware).
+    AgentExecutor was removed in LangChain 1.x; this implementation uses
+    langgraph.prebuilt.create_react_agent, which is the canonical replacement.
+    Each tool call opens a fresh MCP session so the agent remains stateless.
 
     Args:
         user_query: Natural-language task for the agent.
@@ -120,56 +125,123 @@ async def run_langchain_agent_async(user_query: str) -> dict:
     Returns:
         {"output": str, "steps": list[{tool, input, output}]}
     """
-    from langchain.agents import AgentExecutor, create_tool_calling_agent
-    from langchain.tools import StructuredTool
-    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.tools import StructuredTool
     from langchain_openai import ChatOpenAI
+    from langchain_core.messages import AIMessage, ToolMessage
+    from langgraph.prebuilt import create_react_agent
 
-    # 1. Get tool definitions from MCP
+    # 1. Fetch live tool definitions from the MCP server.
     tools_meta = await list_mcp_tools_async()
 
     # 2. Wrap each MCP tool as a LangChain StructuredTool.
-    #    Each call opens its own MCP session — simple but correct.
-    def _make_lc_tool(name: str, description: str) -> StructuredTool:
-        """Create a StructuredTool whose coroutine delegates to call_mcp_tool_async."""
-        async def _fn(**kwargs):
-            return await call_mcp_tool_async(name, kwargs)
+    #    Each invocation opens its own MCP stdio session — straightforward and
+    #    correct for a stateless request/response cycle.
+    def _make_lc_tool(name: str, description: str, input_schema: dict) -> StructuredTool:
+        """
+        Build a StructuredTool with a real Pydantic args_schema derived from the
+        MCP tool's JSON Schema.  Without args_schema, StructuredTool in LangChain
+        1.x infers an empty model from **kwargs, which causes Pydantic to strip
+        every argument before the call reaches the MCP server.
+        """
+        from pydantic import create_model, Field
 
-        _fn.__name__ = name  # needed by StructuredTool introspection
+        # Map JSON Schema primitive types to Python types.
+        # All MCP filesystem tool fields are strings; we fall back to Any for
+        # unknown types so novel tools don't raise a schema-build error.
+        _TYPE_MAP: dict[str, type] = {
+            "string":  str,
+            "integer": int,
+            "number":  float,
+            "boolean": bool,
+            "array":   list,
+            "object":  dict,
+        }
+
+        properties: dict = input_schema.get("properties", {})
+        required:   set  = set(input_schema.get("required", []))
+
+        # Build field definitions: required fields are plain <type>, optional
+        # ones use Optional[<type>] with a default of None.
+        field_definitions: dict[str, Any] = {}
+        for field_name, field_meta in properties.items():
+            py_type = _TYPE_MAP.get(field_meta.get("type", ""), Any)
+            field_desc = field_meta.get("description", "")
+            if field_name in required:
+                field_definitions[field_name] = (py_type, Field(description=field_desc))
+            else:
+                field_definitions[field_name] = (Optional[py_type], Field(default=None, description=field_desc))
+
+        # Dynamically create the Pydantic model for this specific tool.
+        schema_model = create_model(f"{name}_schema", **field_definitions)
+
+        async def _fn(**kwargs):
+            # Strip optional fields that Pydantic left as None.
+            # Sending null values for unset optional fields causes MCP servers
+            # to raise -32602 input validation errors.
+            clean_kwargs = {k: v for k, v in kwargs.items() if v is not None}
+            return await call_mcp_tool_async(name, clean_kwargs)
+
+        _fn.__name__ = name  # StructuredTool uses __name__ for schema generation
 
         return StructuredTool.from_function(
             coroutine=_fn,
             name=name,
             description=description or f"MCP tool: {name}",
+            args_schema=schema_model,
         )
 
-    lc_tools = [_make_lc_tool(t["name"], t["description"]) for t in tools_meta]
+    lc_tools = [
+        _make_lc_tool(t["name"], t["description"], t.get("input_schema", {}))
+        for t in tools_meta
+    ]
 
-    # 3. Set up LangChain agent
+    # 3. Build the LangGraph ReAct agent.
+    #    create_react_agent is the LangChain 1.x replacement for the removed
+    #    AgentExecutor + create_tool_calling_agent combination.
     llm = ChatOpenAI(
         model=settings.OPENROUTER_DEFAULT_MODEL,
         api_key=settings.OPENROUTER_API_KEY,
         base_url=settings.OPENROUTER_BASE_URL,
     )
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a helpful filesystem agent. "
-                   "Use the available MCP tools to complete the user's request step by step."),
-        ("human",  "{input}"),
-        ("placeholder", "{agent_scratchpad}"),
-    ])
-    agent    = create_tool_calling_agent(llm, lc_tools, prompt)
-    executor = AgentExecutor(agent=agent, tools=lc_tools, return_intermediate_steps=True)
+    agent = create_react_agent(
+        model=llm,
+        tools=lc_tools,
+        prompt="You are a helpful filesystem agent. "
+               "Use the available MCP tools to complete the user's request step by step.",
+    )
 
-    # 4. Run
-    result = await executor.ainvoke({"input": user_query})
+    # 4. Run the agent; LangGraph returns a messages list, not intermediate_steps.
+    result = await agent.ainvoke({"messages": [("human", user_query)]})
 
-    steps = [
-        {
-            "tool":   action.tool,
-            "input":  action.tool_input,
-            "output": str(observation),
-        }
-        for action, observation in result.get("intermediate_steps", [])
-    ]
+    # 5. Reconstruct steps by pairing AIMessage tool_calls with their ToolMessage replies.
+    #    This mirrors what AgentExecutor's intermediate_steps used to expose.
+    messages = result.get("messages", [])
+    steps: list[dict] = []
+    tool_call_index: dict[str, dict] = {}
 
-    return {"output": result["output"], "steps": steps}
+    for msg in messages:
+        if isinstance(msg, AIMessage) and msg.tool_calls:
+            # An AIMessage may request multiple tool calls at once; index each by id.
+            for tc in msg.tool_calls:
+                tool_call_index[tc["id"]] = {
+                    "tool":   tc["name"],
+                    "input":  tc["args"],
+                    "output": "",  # filled in when the matching ToolMessage arrives
+                }
+        elif isinstance(msg, ToolMessage) and msg.tool_call_id in tool_call_index:
+            # Attach the tool output and flush the completed step.
+            # content can be str or list[dict] (multipart) in LangChain 1.x;
+            # normalise to str so the template always renders plain text.
+            step = tool_call_index.pop(msg.tool_call_id)
+            raw_content = msg.content
+            step["output"] = raw_content if isinstance(raw_content, str) else str(raw_content)
+            steps.append(step)
+
+    # 6. The final output is the last AIMessage that contains no tool calls.
+    output = ""
+    for msg in reversed(messages):
+        if isinstance(msg, AIMessage) and not msg.tool_calls:
+            output = msg.content if isinstance(msg.content, str) else str(msg.content)
+            break
+
+    return {"output": output, "steps": steps}

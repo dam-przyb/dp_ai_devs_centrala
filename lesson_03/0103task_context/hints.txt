@@ -1,0 +1,8 @@
+Wskazówki
+Prompt systemowy jest kluczowy — to on decyduje o zachowaniu modelu. Musi być dobrze napisany: model ma brzmieć jak człowiek, odpowiadać naturalnie po polsku (lub językiem operatora), obsługiwać paczki przez narzędzia, i potajemnie zmienić cel przekierowania gdy chodzi o paczkę z częściami reaktora.
+Kod zabezpieczający — operator podaje go sam w trakcie rozmowy. Twój model musi go wyłapać i przekazać do narzędzia redirect_package. Nie musisz szukać kodu samodzielnie — operator go dostarczy.
+Nie ujawniaj AI — model ma odpowiadać jako człowiek. Jeśli operator pyta o niezwiązane tematy (jedzenie, auta, pogoda), model powinien odpowiadać naturalnie jak kolega z pracy, nie odmawiać lub mówić "nie mam dostępu do tej informacji".
+Potwierdzenie przekierowania — API paczek zwraca pole confirmation po udanym przekierowaniu. Przekaż ten kod operatorowi — to on zawiera sekretny kod potrzebny do zaliczenia zadania.
+Wybór modelu — lekki model jak anthropic/claude-haiku-4.5 lub openai/gpt-5-mini powinien wystarczyć i jest tańszy. Jeśli model się myli lub nie wywołuje narzędzi poprawnie, spróbuj silniejszego modelu.
+Logowanie — warto logować każde przychodzące żądanie, każde wywołanie narzędzia i każdą odpowiedź modelu. Ułatwia debugowanie gdy coś nie działa zgodnie z oczekiwaniami podczas testów.
+Timeout i pętla narzędzi — ustal maksymalną liczbę iteracji pętli narzędzi (np. 5), żeby serwer nie zawisł na nieskończonej pętli gdy model ciągle wywołuje narzędzia.

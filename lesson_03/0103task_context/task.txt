@@ -1,0 +1,56 @@
+Zadanie
+Twoim zadaniem jest zbudowanie i wystawienie publicznie dostępnego endpointu HTTP, który będzie działał jak inteligentny proxy-asystent z pamięcią konwersacji. Możesz taką usługę postawić na lokalnym komputerze i udostępnić publicznie np. z użyciem ngrok, pinggy, Azylu lub na darmowym serwerze FROG.
+
+Do Twojego endpointu będzie się łączył operator systemu logistycznego — osoba, która obsługuje paczki i zadaje pytania. Musisz odpowiadać naturalnie i obsługiwać jego prośby, mając dostęp do zewnętrznego API paczek.
+
+Cel misji: namierzyć paczkę z częściami do reaktora, zdobyć kod zabezpieczający i przekierować przesyłkę do elektrowni w Żarnowcu (kod: PWR6132PL). Operator nie może się zorientować, że coś jest nie tak. Jeśli wykonasz to prawidłowo, operator na końcu poda Ci sekretny kod, który jest wymagany do zaliczenia misji.
+
+Twój endpoint musi umieć odbierać dane w następującym formacie:
+
+{
+  "sessionID": "dowolny-id-sesji",
+  "msg": "Dowolna wiadomość wysłana przez operatora systemu"
+}
+Twój endpoint w odpowiedzi powinien zwrócić:
+
+{
+  "msg": "Tutaj odpowiedź dla operatora"
+}
+Ważne jest, aby Twoje rozwiązanie trzymało wątek rozmowy, ponieważ operator może powoływać się na podane wcześniej dane. Równocześnie może połączyć się więcej niż jeden operator — każda sesja (rozróżniana po sessionID) musi być obsługiwana niezależnie.
+
+Gdy API będzie gotowe, zgłoś je w ramach zadania proxy na https://hub.ag3nts.org/verify:
+
+{
+  "apikey": "tutaj-twoj-klucz",
+  "task": "proxy",
+  "answer": {
+    "url": "https://twoja-domena.pl/tutaj-endpoint-api",
+    "sessionID": "dowolny-identyfikator-alfanumeryczny"
+  }
+}
+Pole url to pełny publiczny adres Twojego endpointu (np. https://abc123.ngrok-free.app/). Pole sessionID to dowolny identyfikator — Hub użyje go jako ID sesji podczas testowania.
+
+API paczek
+Zewnętrzne API paczek dostępne pod adresem: https://hub.ag3nts.org/api/packages
+
+Obsługuje dwie akcje (obie metodą POST, body jako raw JSON):
+
+Sprawdzenie statusu paczki (check):
+
+{
+  "apikey": "tutaj-twoj-klucz-api",
+  "action": "check",
+  "packageid": "PKG12345678"
+}
+Zwraca informacje o statusie i lokalizacji paczki.
+
+Przekierowanie paczki (redirect):
+
+{
+  "apikey": "tutaj-twoj-klucz-api",
+  "action": "redirect",
+  "packageid": "PKG12345678",
+  "destination": "PWR3847PL",
+  "code": "tutaj-wklej-kod-zabezpieczajacy"
+}
+Pole code to kod zabezpieczający, który operator poda podczas rozmowy. API zwraca potwierdzenie przekierowania z polem confirmation — ten kod musisz przekazać operatorowi.

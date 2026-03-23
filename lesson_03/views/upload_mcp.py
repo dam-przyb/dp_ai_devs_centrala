@@ -55,9 +55,12 @@ def upload_mcp_api(request: HttpRequest) -> HttpResponse:
         return render(request, "lesson_03/partials/agent_result.html",
                       {"error": f"Could not save file: {exc}"})
 
-    # Build an objective and let the MCP agent handle reading + summarizing
+    # Build an objective using the full absolute path (forward slashes so the
+    # MCP server receives a clean path regardless of OS).  Passing only the
+    # bare filename makes the agent waste steps guessing the directory.
+    full_path = str(settings.SANDBOX_DIR.resolve() / filename).replace("\\", "/")
     objective = (
-        f"Read the file '{filename}' from the sandbox directory "
+        f"Read the file at path '{full_path}' "
         f"and provide a concise summary of its contents."
     )
 

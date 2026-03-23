@@ -1,0 +1,214 @@
+Czym jest Azyl?
+
+Azyl to darmowy serwer dostępny dla każdego uczestnika szkolenia AI_devs. Łączysz się z nim przez SSH i możesz na nim uruchamiać kod, hostować swoje API lub stronę internetową. W przyszłości pojawią się zadania wymagające podania adresu do Twojego API, tak żeby Centrala mogła się do niego dostać z Internetu. Wtedy możesz swój kod wystawić bezpośrednio na Azylu gdzie będzie odpowiadał pod adresem podanym przy logowaniu.
+
+Oto instrukcja od : Jeśli działasz na swojej maszynie i masz możliwość wystawienia serwera na zewnątrz (np. przez własny VPS), Azyl nie jest wymagany. Ale jeśli potrzebujesz prostej platformy do hostingu na czas szkolenia to Azyl jest do tego idealny.
+
+Dane dostępowe do Azylu powinieneś dostać na maila. Jeśli zapomniałeś hasła to możesz je zresetować pod https://hub.ag3nts.org/ szkolenia klikając w "Reset hasła".
+
+W przyszłości pojawią się zadania, w których to nie Ty będziesz odpytywać Centralę, tylko Centrala będzie odpytywać Twój serwer. Ten poradnik pokazuje jak wystawić lokalny serwer na świat za pomocą tunelu SSH przez Azyl.
+
+Alternatywy:
+
+- https://ngrok.com/
+
+- https://developers.cloudflare.com/pages/how-to/preview-with-cloudflare-tunnel/
+
+- https://pinggy.io/
+
+- wrzucenie kodu swojego serwera bezpośrednio na Azyl zamiast uruchamiania go u siebie
+
+Co będzie nam potrzebne?
+
+- działający lokalny serwer - swój napisałem w Bun, kod podam poniżej
+
+- dostęp do Azylu (dane dostępowe powinieneś dostać na maila)
+
+Lokalny serwer
+
+Oto minimalistyczny serwer używając funkcji wbudowanej w Bun. Serwuje on dwa endpointy - jeden GET pod adresem '/' i jeden POST pod adresem '/test-post/'. Oto jak wygląda jego kod:
+
+
+
+import { serve } from "bun";
+
+const server = serve({
+    port: process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000,
+    async fetch(req) {
+        if (req.method === "POST" && new URL(req.url).pathname === "/test-post/") {
+            return new Response(JSON.stringify({ message: "Hello world", your_data: await req.json() }), { status: 200 });
+        }
+        if (req.method === "GET" && new URL(req.url).pathname === "/") {
+            return new Response("Hello world", { status: 200 });
+        }
+        return new Response("Not Found", { status: 404 });
+    },
+});
+
+console.log(`Listening on http://localhost:${server.port}`); 
+
+Serwer jak widać domyślnie odpowiada na porcie 3000. Uruchamiam go lokalnie:
+
+
+
+Sprawdzamy czy działa:
+
+
+
+Użyte polecenia:
+
+# dla requestu GET do / 
+curl http://127.0.0.1:3000
+
+# dla requestu POST do /test-post/
+curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST http://localhost:3000/test-post/
+
+W jednym z nich celowo użyto 127.0.0.1 a w drugim localhost, żeby upewnić się że oba "adresy" działają. Może to być ważne w kolejnych krokach.
+
+Właściwe proxy
+
+Zostaje teraz spowodować, żeby ruch wysyłany na Azyl trafiał do naszego lokalnego serwera. Zrobimy to za pomocą tunelu SSH. Zakładam że jesteś w stanie zalogować się na Azyl. Przy logowaniu pojawia się taki komunikat:
+
+
+
+
+
+Są w nim istotne dwa elementy:
+
+- twój numer portu (w przykładzie: 50005)
+
+- twój adres (w przykładzie: https://azyl-50005.ag3nts.org)
+
+Jak zatem spowodować żeby Twój już uruchomiony lokalnie na porcie 3000 serwer zaczął być widoczny przez Azyl? Wejdź do terminala na swoim komputerze (innego niż ten w którym uruchomiłeś serwer) i wykonaj takie polecenie:
+
+ssh -R 50005:localhost:3000 agent10005@azyl.ag3nts.org -p 5022
+
+⚠️ Uwaga:
+
+- 50005 - to numer Twojego portu na Azylu
+
+- 3000 - to numer Twojego lokalnego portu na Twoim komputerze
+
+- agent10005 - to Twoja nazwa użytkownika (widoczna między innymi w Centrali)
+
+- `-p 5022` jest konieczne żeby połączenie było nawiązywane na właściwym porcie
+
+Po wykonaniu tego polecenia, powinieneś zobaczyć następujący ekran:
+
+
+
+
+
+To jest właściwy objaw, teraz Twój serwer powinien być dostępny na przydzielonym Tobie adresie. Sprawdźmy: otwieram kolejny terminal i wykonuję:
+
+
+
+wykonane polecenia:
+
+curl https://azyl-50005.ag3nts.org
+
+curl -d '{"key1":"value1", "key2":"value2"}' -H "Content-Type: application/json" -X POST https://azyl-50005.ag3nts.org/test-post/
+
+Zauważ, że Azyl dodaje obsługę HTTPS więc o to też nie musimy się martwić.
+
+Zamykanie tunelu
+
+Po zakończeniu prac z serwerem, należy zamknąć tunel, wydając polecenie "exit" w terminalu Azylu, lub wciskając tam "ctrl + d"
+
+
+
+
+
+
+
+Opis dla Windows z użyciem PuTTY
+
+Dzięki Kamilowi Miroszowi mamy opis dla Windowsa:
+
+Zwykłe połączenie SSH:
+
+1. W zakładce Session:
+
+   - Saved Sessions: Azyl
+
+   - Host Name: agent{TWOJ_AGENT}@azyl.ag3nts.org
+
+   - Port: 5022
+
+   - Connection type: SSH
+
+2. Zapisz sesję jako Azyl.
+
+Ustawienie tunelu:
+
+1. Wczytaj sesję Azyl.
+
+2. W Session zmień nazwę na przykład na Azyl tunnel.
+
+   - Host Name: agent{TWOJ_AGENT}@azyl.ag3nts.org
+
+   - Port: 5022
+
+3. Przejdź do Connection -> SSH -> Tunnels:
+
+   - Dodaj nowy przekierowywany port:
+
+     - Source port: Twój port z Azylu
+
+     - Destination: Twój port lokalny, np. localhost:3000
+
+   - Ustaw "Remote" 
+
+   - Wciśnij przycisk Add żeby konfiguracja została zapisana 
+
+
+
+
+
+4. Wróć do Session i zapisz (upewnij się, że zmieniłeś nazwę, żeby nie nadpisać wcześniejszej sesji).
+
+Reszta jak w opisie posta.
+
+Typowe problemy
+
+1. Jakiś inny proces już słucha na Twoim porcie - wtedy przy wykonaniu polecenia tworzącego tunel, zobaczysz:
+
+
+
+
+
+Istotne jest to co widać zaraz na początku - przekierowanie portu nie powiodło się. Co można zrobić:
+
+- sprawdzić czy nie zostawiłem działającego tunelu w jakimś innym oknie terminala
+
+- zmienić port o 10.000 w dół - zamiast łączyć na 50005 w tym przypadku idę na 40005 - zmieniam wtedy tą liczbę w wywołaniu SSH oraz w adresie strony:
+
+```bash
+
+ssh -R 40005:localhost:3000 agent10005@azyl.ag3nts.org -p 5022
+
+curl https://azyl-40005.ag3nts.org
+
+```
+
+- UWAGA - po zalogowaniu Azyl będzie pokazywał "normalny" numer portu i adres, ale w praktyce będziesz pracować na takim, jaki został podany przy uruchomieniu tunelu
+
+2. Połączenie z podaniem localhost nie działa - konflikt adresów IPv4 i IPv6
+
+Niektóre systemy mają taką konfigurację, że "localhost" jest adresem IPv6 i nie daje się tunelować do Azylu. Można wtedy spróbować połączenia przez adres IP:
+
+ssh -R 50005:127.0.0.1:3000 agent10005@azyl.ag3nts.org -p 5022
+
+Należy oczywiście upewnić się że Twój lokalny serwer faktycznie słucha na adresie 127.0.0.1 - dlatego przy początkowym testowaniu użyłem zarówno "adresu" localhost jak i 127.0.0.1
+
+3. Komunikat "nic nie słucha na tym porcie"
+
+
+
+
+
+Twój serwer nie działa, albo nie zestawiłeś poprawnie tunelu:
+
+- sprawdź za pomocą curl / postman / insomnia czy Twój serwer działa
+
+- sprawdź czy tunel jest zestawiony (czy nie zamknąłeś przypadkiem terminala z tunelem)
