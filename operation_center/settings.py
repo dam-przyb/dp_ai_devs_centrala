@@ -13,7 +13,7 @@ SECRET_KEY = os.getenv(
 
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".ag3nts.org"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -102,7 +102,7 @@ KNOWLEDGE_BASE_DIR.mkdir(exist_ok=True)
 # ── LLM / OpenRouter ──────────────────────────────────────────────────────────
 OPENROUTER_API_KEY = os.getenv("OPENROUTERKEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_DEFAULT_MODEL = "openai/gpt-4o-mini"
+OPENROUTER_DEFAULT_MODEL = "google/gemini-3-flash-preview" #"openai/gpt-4o-mini"
 
 # OpenAI key (Whisper, lesson 04 — optional)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

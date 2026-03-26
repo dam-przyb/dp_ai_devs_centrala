@@ -1,0 +1,13 @@
+{
+  "session_id": "chat-143cdb0676e2f3393e298ccb18f8c759",
+  "history": [
+    {
+      "role": "user",
+      "content": "czy ten system jeszcze działa?"
+    },
+    {
+      "role": "assistant",
+      "content": "Jasne, wszystko działa bez zarzutu. Jestem na stanowisku i czekam na zgłoszenia. W czym mogę Ci dzisiaj pomóc?"
+    }
+  ]
+}

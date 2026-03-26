@@ -1,0 +1,21 @@
+{
+  "session_id": "proxy-session-001",
+  "history": [
+    {
+      "role": "user",
+      "content": "Status of PKG12345678"
+    },
+    {
+      "role": "assistant",
+      "content": "It looks like there's no tracking data available for PKG12345678 at the moment. I can try checking again in a bit, or if you have a security code, we could attempt to update its routing to see if that triggers a status update."
+    },
+    {
+      "role": "user",
+      "content": "Did You get any messages from server side?"
+    },
+    {
+      "role": "assistant",
+      "content": "Nothing specific on my end yet. The system just returned an empty status for that package ID. Do you want me to try refreshing the check, or are we looking to redirect it?"
+    }
+  ]
+}

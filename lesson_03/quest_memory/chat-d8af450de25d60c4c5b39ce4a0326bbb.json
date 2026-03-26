@@ -1,0 +1,13 @@
+{
+  "session_id": "chat-d8af450de25d60c4c5b39ce4a0326bbb",
+  "history": [
+    {
+      "role": "user",
+      "content": "paczka mi zaginęła, ale nie pamiętam numeru. Zagadam później"
+    },
+    {
+      "role": "assistant",
+      "content": "Jasne, nie ma problemu. Jak już znajdziesz numer przesyłki, daj znać – sprawdzę w systemie, co się z nią dzieje i gdzie utknęła. \n\nBędę pod ręką, do usłyszenia!"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+<div class="p-6 max-w-5xl mx-auto space-y-6">
+
+  <div>
+    <h2 class="font-semibold text-gray-800 text-xl">Quest - Package Proxy</h2>
+    <p class="text-sm text-gray-500 mt-1">
+      Lesson 03 quest workspace for the proxy mission. In this phase, you can test the proxy logic locally
+      and monitor in-memory runtime sessions. Tunnel control and full operations dashboard come in next phases.
+    </p>
+  </div>
+
+  <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    <p class="font-semibold">Task Contract Endpoint</p>
+    <p class="mt-1">Public endpoint path: <code>{{ proxy_path }}</code></p>
+    <p>Local URL preview: <code>{{ proxy_url_preview }}</code></p>
+  </div>
+
+  <div class="grid grid-cols-3 gap-4">
+
+    <div class="col-span-2 space-y-4">
+      <form hx-post="{% url 'l03_quest_probe_api' %}"
+            hx-target="#quest-probe-result"
+            hx-swap="innerHTML"
+            hx-indicator="#quest-probe-spinner"
+            class="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+        {% csrf_token %}
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">session_id</label>
+          <input name="session_id"
+                 value="demo-session-01"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">msg</label>
+          <textarea name="msg" rows="3"
+                    placeholder="Ask about package status or redirection"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            Send Local Probe
+          </button>
+          <span id="quest-probe-spinner" class="htmx-indicator text-xs text-gray-400 animate-pulse">Running proxy turn...</span>
+        </div>
+      </form>
+
+      <div id="quest-probe-result"></div>
+    </div>
+
+    <div class="col-span-1">
+      <div class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div class="px-4 py-3 border-b bg-gray-50">
+          <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Runtime Snapshot</p>
+        </div>
+        <div id="quest-status-panel"
+             hx-get="{% url 'l03_quest_status_api' %}"
+             hx-trigger="load, every 5s"
+             hx-swap="innerHTML"
+             class="p-4">
+          {% include "lesson_03/partials/quest_status.html" with snapshot=snapshot %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

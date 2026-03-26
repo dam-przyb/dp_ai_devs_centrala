@@ -62,6 +62,11 @@ NAV = [
         "label": "03 — MCP",
         "modules": [
             {
+                "slug": "quest",
+                "label": "Quest",
+                "url_name": "l03_quest",
+            },
+            {
                 "slug": "mcp_core",
                 "label": "MCP Core",
                 "url_name": "l03_mcp_core",

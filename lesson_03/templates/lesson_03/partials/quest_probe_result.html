@@ -1,0 +1,47 @@
+{% if error %}
+  <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <p class="font-semibold">Probe failed</p>
+    <p class="mt-1">{{ error }}</p>
+  </div>
+{% elif data %}
+  <div class="space-y-4">
+    <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+      <p class="text-xs uppercase tracking-wider font-semibold text-emerald-700">Proxy Reply</p>
+      <p class="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{{ data.reply }}</p>
+    </div>
+
+    {% if data.steps %}
+      <details class="rounded-lg border border-gray-200 overflow-hidden">
+        <summary class="px-4 py-2 bg-gray-50 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100">
+          Tool Trace ({{ data.steps|length }})
+        </summary>
+        <div class="divide-y divide-gray-100">
+          {% for step in data.steps %}
+            <div class="px-4 py-2 text-xs">
+              <p><span class="font-semibold">Tool:</span> <code>{{ step.tool }}</code></p>
+              <p><span class="font-semibold">Input:</span> <code class="break-all">{{ step.input }}</code></p>
+              <p><span class="font-semibold">Output:</span> <code class="break-all">{{ step.output }}</code></p>
+            </div>
+          {% endfor %}
+        </div>
+      </details>
+    {% endif %}
+
+    {% if data.api_log %}
+      <details class="rounded-lg border border-gray-200 overflow-hidden">
+        <summary class="px-4 py-2 bg-gray-50 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100">
+          API Log ({{ data.api_log|length }})
+        </summary>
+        <div class="divide-y divide-gray-100">
+          {% for row in data.api_log %}
+            <div class="px-4 py-2 text-xs">
+              <p><span class="font-semibold">Status:</span> {{ row.status_code }}</p>
+              <p><span class="font-semibold">Request:</span> <code class="break-all">{{ row.request }}</code></p>
+              <p><span class="font-semibold">Response:</span> <code class="break-all">{{ row.response_json }}</code></p>
+            </div>
+          {% endfor %}
+        </div>
+      </details>
+    {% endif %}
+  </div>
+{% endif %}
