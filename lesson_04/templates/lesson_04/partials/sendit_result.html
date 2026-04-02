@@ -1,0 +1,247 @@
+{# HTMX partial — SPK sendit agent result #}
+
+{% if error %}
+{# ── Fatal error (service exception) ──────────────────────────────────────── #}
+<div class="p-5 bg-red-50 border border-red-300 rounded-xl">
+  <div class="flex items-start gap-3">
+    <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <div>
+      <p class="font-semibold text-red-800">Agent Failed</p>
+      <p class="text-sm text-red-700 mt-1 font-mono">{{ error }}</p>
+      <p class="text-xs text-red-500 mt-2">
+        Ensure <code>AIDEVSKEY</code> and <code>OPENROUTERKEY</code> are set in your
+        <code>.env</code> file.
+      </p>
+    </div>
+  </div>
+</div>
+
+{% elif data %}
+
+{# ── Flag banner (success) ────────────────────────────────────────────────── #}
+{% if data.flag %}
+<div class="mb-6 p-6 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl shadow-lg text-white">
+  <div class="flex items-start justify-between gap-4">
+    <div class="flex-1">
+      <div class="flex items-center gap-2 mb-2">
+        <svg class="w-7 h-7 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-xl font-bold">Declaration Accepted — Flag Received!</h3>
+      </div>
+      <p class="text-2xl font-mono font-bold tracking-widest mt-3 bg-white/10 px-4 py-2 rounded-lg inline-block">
+        {{ data.flag }}
+      </p>
+    </div>
+    <button onclick="navigator.clipboard.writeText('{{ data.flag|escapejs }}')"
+            class="flex-shrink-0 px-4 py-2 bg-white text-indigo-700 font-semibold rounded-lg hover:bg-indigo-50 transition-colors text-sm">
+      Copy Flag
+    </button>
+  </div>
+</div>
+
+{% else %}
+{# ── No flag yet (attempts exhausted or agent ended without flag) ─────────── #}
+<div class="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-xl">
+  <div class="flex items-center gap-2">
+    <svg class="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <p class="text-sm font-semibold text-amber-800">
+      No flag received after {{ data.submissions|length }} attempt(s). Check the submission log below.
+    </p>
+  </div>
+</div>
+{% endif %}
+
+
+{# ── Submission attempts ───────────────────────────────────────────────────── #}
+{% if data.submissions %}
+<div class="mb-6">
+  <h3 class="text-base font-semibold text-gray-800 mb-3">
+    Submission Attempts
+    <span class="text-sm font-normal text-gray-500 ml-1">({{ data.submissions|length }} of 3)</span>
+  </h3>
+  <div class="space-y-3">
+    {% for sub in data.submissions %}
+    <div class="border rounded-xl overflow-hidden
+                {% if sub.status_code == 200 %}border-green-300 bg-green-50
+                {% else %}border-red-200 bg-red-50{% endif %}">
+
+      {# Attempt header #}
+      <div class="flex items-center justify-between px-4 py-2
+                  {% if sub.status_code == 200 %}bg-green-100{% else %}bg-red-100{% endif %}">
+        <span class="text-sm font-semibold
+                     {% if sub.status_code == 200 %}text-green-800{% else %}text-red-800{% endif %}">
+          Attempt {{ sub.attempt }}
+        </span>
+        <span class="font-mono text-xs px-2 py-0.5 rounded
+                     {% if sub.status_code == 200 %}bg-green-200 text-green-800
+                     {% else %}bg-red-200 text-red-800{% endif %}">
+          HTTP {{ sub.status_code }}
+        </span>
+      </div>
+
+      {# Hub response #}
+      <div class="px-4 py-3">
+        <p class="text-xs font-semibold text-gray-500 mb-1">Hub Response</p>
+        <pre class="text-xs font-mono text-gray-700 whitespace-pre-wrap break-words bg-white/60 rounded p-2 border border-gray-200">{{ sub.response_text }}</pre>
+      </div>
+
+      {# Declaration text (collapsible) #}
+      <details class="px-4 pb-3">
+        <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-700 select-none">
+          Show submitted declaration text
+        </summary>
+        <pre class="mt-2 text-xs font-mono text-gray-700 whitespace-pre-wrap bg-white/70 rounded p-3 border border-gray-200 max-h-64 overflow-y-auto">{{ sub.declaration }}</pre>
+        {% if sub.declaration %}
+        <button onclick="navigator.clipboard.writeText('{{ sub.declaration|escapejs }}')"
+                class="mt-1 text-xs text-indigo-600 hover:underline">
+          Copy declaration text
+        </button>
+        {% endif %}
+      </details>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+{# ── Final declaration (last submitted) ────────────────────────────────────── #}
+{% if data.declaration %}
+<div class="mb-6">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="text-base font-semibold text-gray-800">Final Declaration Text</h3>
+    <button onclick="navigator.clipboard.writeText('{{ data.declaration|escapejs }}')"
+            class="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-1 rounded-lg hover:bg-indigo-100 transition-colors">
+      Copy
+    </button>
+  </div>
+  <pre class="text-xs font-mono text-gray-800 whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-xl p-4 max-h-80 overflow-y-auto">{{ data.declaration }}</pre>
+</div>
+{% endif %}
+
+
+{# ── Agent reasoning steps ─────────────────────────────────────────────────── #}
+{% if data.steps %}
+<div class="mb-6">
+  <h3 class="text-base font-semibold text-gray-800 mb-3">
+    Agent Reasoning Steps
+    <span class="text-sm font-normal text-gray-500 ml-1">({{ data.steps|length }} iterations)</span>
+  </h3>
+  <div class="space-y-2">
+    {% for step in data.steps %}
+    <div class="flex gap-3 items-start rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+      {# Step number badge #}
+      <div class="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold
+                  {% if step.has_tool_calls %}bg-indigo-500 text-white{% else %}bg-gray-300 text-gray-700{% endif %}">
+        {{ step.iteration }}
+      </div>
+      <div class="flex-1 min-w-0">
+        {# Tool calls badge #}
+        {% if step.tool_calls %}
+          <div class="flex flex-wrap gap-1 mb-1">
+            {% for tc in step.tool_calls %}
+            <span class="text-xs font-mono bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+              ⚙ {{ tc }}
+            </span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <span class="text-xs text-gray-400 italic">reasoning / no tool call</span>
+        {% endif %}
+        {# Content preview #}
+        {% if step.content_preview %}
+        <p class="text-xs text-gray-600 mt-0.5 truncate" title="{{ step.content_preview }}">
+          {{ step.content_preview|truncatechars:180 }}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+{# ── Fetched companion documents ───────────────────────────────────────────── #}
+{% if data.fetched_docs %}
+<div class="mb-6">
+  <details class="border border-gray-200 rounded-xl overflow-hidden">
+    <summary class="px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none">
+      Fetched SPK Companion Documents
+      <span class="font-normal text-gray-500 ml-1">({{ data.fetched_docs|length }} files)</span>
+    </summary>
+    <div class="divide-y divide-gray-100">
+      {% for fname, content in data.fetched_docs.items %}
+      <details class="px-4 py-2">
+        <summary class="text-xs font-mono text-indigo-700 cursor-pointer hover:text-indigo-900 select-none py-1">
+          {{ fname }}
+        </summary>
+        <pre class="mt-2 text-xs text-gray-700 font-mono whitespace-pre-wrap bg-gray-50 rounded p-3 border border-gray-100 max-h-48 overflow-y-auto">{{ content }}</pre>
+      </details>
+      {% endfor %}
+    </div>
+  </details>
+</div>
+{% endif %}
+
+
+{# ── Action log timeline ───────────────────────────────────────────────────── #}
+{% if data.action_log %}
+<div class="mb-6">
+  <details class="border border-gray-200 rounded-xl overflow-hidden">
+    <summary class="px-4 py-3 bg-gray-50 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none">
+      Action Log
+      <span class="font-normal text-gray-500 ml-1">
+        ({{ data.action_log|length }} entries — saved to log.json)
+      </span>
+    </summary>
+    <div class="px-4 py-3 space-y-1 max-h-96 overflow-y-auto">
+      {% for entry in data.action_log %}
+      <div class="flex gap-2 text-xs items-start py-0.5">
+        {# Timestamp #}
+        <span class="flex-shrink-0 text-gray-400 font-mono w-24 pt-0.5">
+          {{ entry.ts|slice:"11:19" }}
+        </span>
+        {# Action type badge #}
+        <span class="flex-shrink-0 font-mono px-1.5 py-0.5 rounded text-xs
+          {% if entry.action == 'flag_confirmed' or entry.action == 'run_complete' %}bg-green-100 text-green-700
+          {% elif entry.action == 'submit_declaration' %}bg-indigo-100 text-indigo-700
+          {% elif entry.action == 'fetching_image' or entry.action == 'fetched_ok' %}bg-purple-100 text-purple-700
+          {% elif entry.action == 'agent_step' %}bg-blue-100 text-blue-700
+          {% elif entry.action == 'max_attempts_reached' %}bg-red-100 text-red-700
+          {% else %}bg-gray-100 text-gray-600{% endif %}">
+          {{ entry.action }}
+        </span>
+        {# Key detail #}
+        <span class="text-gray-600 truncate">
+          {% if entry.filename %}{{ entry.filename }}{% endif %}
+          {% if entry.files %}{{ entry.files|join:", " }}{% endif %}
+          {% if entry.flag %}{{ entry.flag }}{% endif %}
+          {% if entry.char_count %}{{ entry.char_count }} chars{% endif %}
+          {% if entry.status_code %}HTTP {{ entry.status_code }}{% endif %}
+          {% if entry.error %}{{ entry.error|truncatechars:80 }}{% endif %}
+          {% if entry.content_preview and not entry.filename %}{{ entry.content_preview|truncatechars:80 }}{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="px-4 pb-3">
+      <p class="text-xs text-gray-400 mt-1">
+        Full log saved to:
+        <code class="bg-gray-100 px-1 rounded">{{ data.log_path }}</code>
+      </p>
+    </div>
+  </details>
+</div>
+{% endif %}
+
+{% endif %}{# end elif data #}

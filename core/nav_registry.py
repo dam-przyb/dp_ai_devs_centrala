@@ -113,6 +113,11 @@ NAV = [
                 "label": "PDF Report",
                 "url_name": "l04_report",
             },
+            {
+                "slug": "sendit",
+                "label": "Quest (SPK)",
+                "url_name": "l04_sendit",
+            },
         ],
     },
     {

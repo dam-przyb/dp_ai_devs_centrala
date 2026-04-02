@@ -1,5 +1,5 @@
 from django.urls import path
-from lesson_04.views import audio, video_gen, image, report
+from lesson_04.views import audio, video_gen, image, report, sendit
 
 urlpatterns = [
     # Audio transcription + LLM summary
@@ -19,4 +19,8 @@ urlpatterns = [
     path("report/",             report.report_view,          name="l04_report"),
     path("report/preview/",     report.report_preview_api,   name="l04_report_preview"),
     path("report/download/",    report.report_download,      name="l04_report_download"),
+
+    # SPK transport declaration quest
+    path("sendit/",      sendit.sendit_view,          name="l04_sendit"),
+    path("sendit/api/",  sendit.sendit_api,            name="l04_sendit_api"),
 ]
