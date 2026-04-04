@@ -135,6 +135,11 @@ NAV = [
                 "label": "Master Orchestrator",
                 "url_name": "l05_agent",
             },
+            {
+                "slug": "railway",
+                "label": "Railway Quest",
+                "url_name": "l05_railway",
+            },
         ],
     },
 ]

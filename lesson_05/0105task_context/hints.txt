@@ -1,0 +1,7 @@
+Wskazówki
+API jest samo-dokumentujące — nie szukaj dokumentacji gdzie indziej. Odpowiedź na help to wszystko, czego potrzebujesz.
+Czytaj błędy uważnie — jeśli akcja się nie powiedzie, komunikat błędu zwykle precyzyjnie wskazuje co poszło nie tak (zły parametr, zła kolejność akcji itp.).
+503 to nie awaria — błąd 503 jest częścią zadania. Kod musi go obsługiwać automatycznie przez retry z backoffem, inaczej zadanie nie da się ukończyć.
+Limity zapytań są bardzo restrykcyjne — to główne utrudnienie zadania. Monitoruj nagłówki po każdym żądaniu i bezwzględnie respektuj limity. Zbyt agresywne odpytywanie spowoduje długie blokady.
+Wybór modelu ma znaczenie — przy restrykcyjnych limitach API liczy się każde zapytanie. Modele, które potrzebują więcej kroków do rozwiązania zadania (lub robią niepotrzebne wywołania API), szybciej wyczerpią limit. Warto przetestować różne modele.
+Loguj każde wywołanie i odpowiedź — przy zadaniach z limitami i losowymi błędami dobre logowanie to podstawa debugowania.
