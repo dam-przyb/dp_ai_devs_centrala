@@ -29,6 +29,9 @@ INSTALLED_APPS = [
     "lesson_03",
     "lesson_04",
     "lesson_05",
+    # Season 2
+    "module_02_01",
+    "module_02_02",
 ]
 
 MIDDLEWARE = [
@@ -117,3 +120,13 @@ AIDEVS_API_KEY = os.getenv("AIDEVSKEY", "")
 # Can be overridden via FINDHIM_MODEL env var to use a stronger model when
 # gpt-4o-mini makes reasoning errors on the multi-step distance-comparison task.
 FINDHIM_MODEL = os.getenv("FINDHIM_MODEL", "openai/gpt-5.4-mini")
+
+# ── Season 2 models & paths ───────────────────────────────────────────────────
+# Model for the Agentic RAG agent (module 02_01). Override via env var.
+RAG_02_01_MODEL = os.getenv("RAG_02_01_MODEL", "openai/gpt-5-mini")
+
+# Document root searched by the RAG file tools. Override via env var.
+LESSONS_TEXTS_DIR = BASE_DIR / os.getenv("LESSONS_TEXTS_DIR", "_lessons_texts")
+
+# Model for module_02_02 (Chunking, Embeddings, Hybrid RAG).
+RAG_02_02_MODEL = os.getenv("RAG_02_02_MODEL", "openai/gpt-4o-mini")

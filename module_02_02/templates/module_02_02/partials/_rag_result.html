@@ -1,0 +1,56 @@
+{# module_02_02/partials/_rag_result.html #}
+{# Appended to #m0202-chat-history via HTMX beforeend. #}
+{# Context: query, answer, sources, search_calls, vector_available, stats, error #}
+
+{% if error %}
+  {# Error bubble #}
+  <div class="flex justify-end">
+    <div class="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-2xl text-sm">
+      {{ query }}
+    </div>
+  </div>
+  <div class="flex justify-start">
+    <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-2xl text-sm">
+      <strong>Error:</strong> {{ error }}
+    </div>
+  </div>
+{% else %}
+  {# User message bubble #}
+  <div class="flex justify-end">
+    <div class="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-2xl text-sm">
+      {{ query }}
+    </div>
+  </div>
+
+  {# AI answer bubble #}
+  <div class="flex justify-start">
+    <div class="space-y-2 max-w-2xl">
+      <div class="bg-gray-100 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm whitespace-pre-wrap">
+        {{ answer }}
+      </div>
+
+      {# Sources + metadata footer #}
+      <div class="px-2 text-xs text-gray-400 space-y-0.5">
+        {% if sources %}
+          <p>Sources: {% for s in sources %}<code class="bg-gray-100 px-1 rounded">{{ s }}</code>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+        {% endif %}
+        <p>
+          Search calls: {{ search_calls }}
+          {% if not vector_available %}
+            · <span class="text-amber-600">⚠ vector search unavailable (FTS only)</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {# OOB stats bar update #}
+  <div id="m0202-stats-bar" hx-swap-oob="true"
+       class="px-6 py-1.5 bg-gray-100 border-b text-xs text-gray-500 flex gap-6 flex-wrap">
+    <span>Documents: <strong>—</strong></span>
+    <span>Chunks: <strong>—</strong></span>
+    <span>Turns: <strong>{{ stats.turns }}</strong></span>
+    <span>Total searches: <strong>{{ stats.search_calls }}</strong></span>
+    <span id="m0202-reindex-status"></span>
+  </div>
+{% endif %}

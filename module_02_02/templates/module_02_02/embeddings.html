@@ -1,0 +1,60 @@
+{# module_02_02/embeddings.html — Embeddings Similarity Demo workspace partial #}
+
+<div class="flex flex-col h-full">
+
+  {# ── Header bar ─────────────────────────────────────────────────────────── #}
+  <div class="px-6 py-4 border-b bg-gray-50">
+    <h2 class="font-semibold text-gray-800 text-lg">Embeddings Similarity Demo</h2>
+    <p class="text-xs text-gray-500 mt-0.5">Season 2 · Lesson 02 · text-embedding-3-small · cosine similarity matrix</p>
+  </div>
+
+  {# ── Main content (scrollable) ───────────────────────────────────────────── #}
+  <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+    {# Phrase input form #}
+    <form hx-post="{% url 'm0202_embeddings_compute' %}"
+          hx-target="#m0202-embeddings-results"
+          hx-swap="innerHTML"
+          hx-indicator="#m0202-embed-spinner"
+          class="bg-white border rounded-xl p-4 space-y-3 shadow-sm">
+      {% csrf_token %}
+
+      <label class="block text-sm font-medium text-gray-700">
+        Phrases <span class="text-gray-400 font-normal">(one per line, max 20)</span>
+      </label>
+      <textarea name="phrases"
+                rows="6"
+                placeholder="LLM agents&#10;RAG retrieval&#10;Vector databases&#10;Text embeddings&#10;Cosine similarity"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"></textarea>
+
+      <div class="flex gap-2">
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg
+                       text-sm font-medium transition-colors">
+          Compute similarity
+        </button>
+        <span id="m0202-embed-spinner"
+              class="htmx-indicator self-center text-xs text-indigo-500 animate-pulse">
+          Computing…
+        </span>
+      </div>
+
+      <div class="text-xs text-gray-400 space-y-0.5">
+        <p>Color legend:
+          <span class="inline-block w-3 h-3 rounded bg-green-200 align-middle"></span> ≥ 0.60 high
+          <span class="inline-block w-3 h-3 rounded bg-yellow-200 align-middle ml-1"></span> ≥ 0.35 moderate
+          <span class="inline-block w-3 h-3 rounded bg-red-200 align-middle ml-1"></span> &lt; 0.35 low
+        </p>
+      </div>
+    </form>
+
+    {# Results area (replaced by HTMX) #}
+    <div id="m0202-embeddings-results">
+      <div class="text-center text-gray-400 text-sm py-8">
+        Enter phrases and click "Compute similarity" to see the matrix.
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,25 @@
+{#
+  _cleared.html — Replaces #m0201-chat-history content after "Clear conversation".
+  Also resets #m0201-stats-bar via OOB swap.
+#}
+
+{# ── Stats bar OOB reset ──────────────────────────────────────────────────── #}
+<div id="m0201-stats-bar"
+     hx-swap-oob="true"
+     class="px-6 py-1.5 bg-gray-100 border-b text-xs text-gray-500 flex gap-6">
+  <span>Turns: <strong>0</strong></span>
+  <span>Total LLM steps: <strong>0</strong></span>
+</div>
+
+{# ── Empty state ──────────────────────────────────────────────────────────── #}
+<div class="flex items-center justify-center h-full">
+  <div class="text-center space-y-3 text-gray-400">
+    <p class="text-4xl">🔍</p>
+    <p class="text-sm font-medium">Conversation cleared.</p>
+    <p class="text-xs max-w-xs mx-auto">
+      Ask a question about the AI_Devs course materials.
+      The agent will search <code>_lessons_texts/</code> and
+      synthesise an answer with source citations.
+    </p>
+  </div>
+</div>

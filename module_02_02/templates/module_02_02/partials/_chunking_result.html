@@ -1,0 +1,74 @@
+{# module_02_02/partials/_chunking_result.html #}
+{# Replaces #m0202-chunking-results via HTMX after running chunking demo. #}
+
+{% if error %}
+  <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+    <strong>Error:</strong> {{ error }}
+  </div>
+{% else %}
+  <div class="space-y-6">
+
+    {# Summary header #}
+    <div class="bg-white border rounded-xl p-4 shadow-sm">
+      <h3 class="font-semibold text-gray-800 mb-2">Results for <code class="bg-gray-100 px-1.5 rounded text-sm">{{ source_file }}</code></h3>
+      <div class="flex flex-wrap gap-4 text-sm">
+        {% for s in strategies %}
+          <span class="bg-indigo-50 text-indigo-700 rounded-full px-3 py-1">
+            {{ s.name }}: <strong>{{ s.count }}</strong> chunks
+          </span>
+        {% endfor %}
+      </div>
+      {% if llm_prompt_tokens %}
+        <p class="text-xs text-amber-600 mt-2">
+          LLM usage — prompt: {{ llm_prompt_tokens }} tok · completion: {{ llm_completion_tokens }} tok
+        </p>
+      {% endif %}
+    </div>
+
+    {# Per-strategy accordion #}
+    {% for s in strategies %}
+      <details class="bg-white border rounded-xl shadow-sm overflow-hidden" {% if forloop.first %}open{% endif %}>
+        <summary class="px-4 py-3 cursor-pointer font-medium text-gray-700 hover:bg-gray-50 select-none flex justify-between items-center">
+          <span>
+            {% if s.name == "characters" %}Characters (1000/200)
+            {% elif s.name == "separators" %}Separators (heading-aware)
+            {% elif s.name == "context" %}Context-enriched (LLM per chunk)
+            {% elif s.name == "topics" %}Topic-based (single LLM call)
+            {% else %}{{ s.name }}
+            {% endif %}
+          </span>
+          <span class="text-xs text-gray-400 font-normal">{{ s.count }} chunks (showing first {{ s.chunks|length }})</span>
+        </summary>
+
+        <div class="divide-y divide-gray-100">
+          {% for chunk in s.chunks %}
+            <div class="px-4 py-3 text-xs space-y-1">
+              {# Chunk index badge #}
+              <div class="flex items-center gap-2 mb-1">
+                <span class="bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">#{{ chunk.index }}</span>
+                <span class="text-gray-400">{{ chunk.char_count }} chars</span>
+                {% if chunk.heading %}
+                  <span class="bg-blue-50 text-blue-600 rounded px-1.5 py-0.5">§ {{ chunk.heading }}</span>
+                {% endif %}
+                {% if chunk.topic %}
+                  <span class="bg-purple-50 text-purple-600 rounded px-1.5 py-0.5">🏷 {{ chunk.topic }}</span>
+                {% endif %}
+              </div>
+
+              {# Context (enriched strategy) #}
+              {% if chunk.context %}
+                <div class="bg-amber-50 border border-amber-200 rounded p-2 text-amber-700">
+                  <span class="font-medium">Context:</span> {{ chunk.context }}
+                </div>
+              {% endif %}
+
+              {# Content preview #}
+              <pre class="bg-gray-50 rounded p-2 whitespace-pre-wrap text-gray-600 font-mono leading-relaxed max-h-48 overflow-y-auto">{{ chunk.content_preview }}{% if chunk.char_count > 300 %}…{% endif %}</pre>
+            </div>
+          {% endfor %}
+        </div>
+      </details>
+    {% endfor %}
+
+  </div>
+{% endif %}

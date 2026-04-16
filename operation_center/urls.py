@@ -11,4 +11,7 @@ urlpatterns = [
     path("03/",     include("lesson_03.urls")),
     path("04/",     include("lesson_04.urls")),
     path("05/",     include("lesson_05.urls")),
+    # Season 2
+    path("s2/01/",  include("module_02_01.urls")),
+    path("s2/02/",  include("module_02_02.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,70 @@
+{# module_02_02/chunking.html — Chunking Demo workspace partial #}
+{# Loaded via HTMX into #workspace-container from the sidebar nav. #}
+
+<div class="flex flex-col h-full">
+
+  {# ── Header bar ─────────────────────────────────────────────────────────── #}
+  <div class="px-6 py-4 border-b bg-gray-50 flex items-start justify-between gap-4">
+    <div>
+      <h2 class="font-semibold text-gray-800 text-lg">Chunking Demo</h2>
+      <p class="text-xs text-gray-500 mt-0.5">Season 2 · Lesson 02 · Compare four chunking strategies</p>
+    </div>
+  </div>
+
+  {# ── Token-usage warning ─────────────────────────────────────────────────── #}
+  <div class="px-6 py-2 bg-amber-50 border-b border-amber-200 text-xs text-amber-700 flex items-center gap-2">
+    <span>⚠</span>
+    <span>
+      The <strong>context-enriched</strong> and <strong>topic-based</strong> strategies call the LLM once per chunk (or once per document).
+      Expect higher token usage and longer processing times.
+    </span>
+  </div>
+
+  {# ── Main content (scrollable) ───────────────────────────────────────────── #}
+  <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+    {# File selection form #}
+    <form hx-post="{% url 'm0202_chunking_run' %}"
+          hx-target="#m0202-chunking-results"
+          hx-swap="innerHTML"
+          hx-indicator="#m0202-chunking-spinner"
+          class="bg-white border rounded-xl p-4 space-y-3 shadow-sm">
+      {% csrf_token %}
+
+      <label class="block text-sm font-medium text-gray-700">
+        Source file (relative to workspace)
+      </label>
+      <div class="flex gap-2">
+        <input type="text"
+               name="source_file"
+               value="{{ active_file }}"
+               placeholder="example.md"
+               class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm
+                      focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg
+                       text-sm font-medium transition-colors">
+          Run chunking
+        </button>
+        <span id="m0202-chunking-spinner"
+              class="htmx-indicator self-center text-xs text-indigo-500 animate-pulse">
+          Running…
+        </span>
+      </div>
+
+      <p class="text-xs text-gray-400">
+        Place <code class="bg-gray-100 px-1 rounded">*.md</code> files in
+        <code class="bg-gray-100 px-1 rounded">media/module_02_02/workspace/</code>
+        to make them available here.
+      </p>
+    </form>
+
+    {# Results area (replaced by HTMX) #}
+    <div id="m0202-chunking-results">
+      <div class="text-center text-gray-400 text-sm py-8">
+        Run chunking to see results.
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,10 @@
+{# module_02_02/partials/_reindex_result.html #}
+{# Replaces #m0202-reindex-status via HTMX after reindex action. #}
+
+{% if error %}
+  <span class="text-red-500">⚠ Reindex failed: {{ error }}</span>
+{% else %}
+  <span class="text-green-600">
+    ✓ Indexed {{ stats.indexed }}, skipped {{ stats.skipped }}, deleted {{ stats.deleted }}
+  </span>
+{% endif %}

@@ -1,0 +1,56 @@
+{#
+  _chat_result.html — New user+AI turn appended to #m0201-chat-history.
+
+  Also updates #m0201-stats-bar via HTMX out-of-band swap (hx-swap-oob="true").
+#}
+
+{# ── Stats bar OOB update ─────────────────────────────────────────────────── #}
+<div id="m0201-stats-bar"
+     hx-swap-oob="true"
+     class="px-6 py-1.5 bg-gray-100 border-b text-xs text-gray-500 flex gap-6">
+  <span>Turns: <strong>{{ stats.turns }}</strong></span>
+  <span>Total LLM steps: <strong>{{ stats.total_steps }}</strong></span>
+</div>
+
+{# ── User message bubble ──────────────────────────────────────────────────── #}
+<div class="flex justify-end">
+  <div class="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-2xl text-sm">
+    {{ question }}
+  </div>
+</div>
+
+{# ── AI response bubble ───────────────────────────────────────────────────── #}
+<div class="flex justify-start">
+  <div class="bg-gray-100 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-2xl text-sm space-y-3">
+
+    {# Main answer text #}
+    <div class="whitespace-pre-wrap">{{ reply.answer }}</div>
+
+    {# Max-steps / error warning #}
+    {% if reply.error %}
+      <p class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+        ⚠ {{ reply.error }}
+      </p>
+    {% endif %}
+
+    {# Sources consulted #}
+    {% if reply.sources %}
+      <div class="border-t border-gray-200 pt-2">
+        <p class="text-xs font-semibold text-gray-500 mb-1">Sources consulted:</p>
+        <ul class="space-y-0.5">
+          {% for src in reply.sources %}
+            <li class="text-xs text-gray-500 font-mono">
+              📄 {{ src.file }}{% if src.start_line %}<span class="text-gray-400"> lines {{ src.start_line }}–{{ src.end_line }}</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {# Step count footer #}
+    <p class="text-xs text-gray-400 border-t border-gray-200 pt-1">
+      {{ reply.steps_taken }} LLM step{{ reply.steps_taken|pluralize }}
+    </p>
+
+  </div>
+</div>
